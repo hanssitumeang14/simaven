@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<title>{{ spk.number }}</title>
+<style>
+  @page {
+    size: A4;
+    margin: 20mm 18mm 22mm 18mm;
+    @bottom-right {
+      content: "Halaman " counter(page) " dari " counter(pages);
+      font-family: "Times New Roman", serif;
+      font-size: 9pt;
+      color: #555;
+    }
+    @bottom-left {
+      content: "{{ spk.number }}";
+      font-family: "Times New Roman", serif;
+      font-size: 9pt;
+      color: #555;
+    }
+  }
+
+  body {
+    font-family: "Times New Roman", serif;
+    font-size: 11pt;
+    line-height: 1.5;
+    color: #000;
+  }
+
+  .kop {
+    display: flex;
+    align-items: center;
+    gap: 12mm;
+    border-bottom: 3px double #000;
+    padding-bottom: 4mm;
+    margin-bottom: 8mm;
+  }
+  .kop img { height: 22mm; }
+  .kop .org-name { font-size: 16pt; font-weight: bold; letter-spacing: 0.5px; }
+  .kop .org-address { font-size: 9.5pt; color: #333; }
+
+  .judul { text-align: center; margin-bottom: 6mm; }
+  .judul h1 { font-size: 13pt; text-transform: uppercase; margin: 0; text-decoration: underline; }
+  .judul .nomor { font-size: 11pt; margin-top: 1mm; }
+
+  table.meta { width: 100%; border-collapse: collapse; margin-bottom: 6mm; }
+  table.meta td { vertical-align: top; padding: 1mm 0; }
+  table.meta td.label { width: 42mm; }
+  table.meta td.sep { width: 4mm; }
+
+  table.rincian { width: 100%; border-collapse: collapse; margin: 4mm 0; font-size: 10pt; }
+  table.rincian th, table.rincian td { border: 0.6pt solid #000; padding: 2mm; }
+  table.rincian th { background: #eaeaea; text-align: center; font-weight: bold; }
+  table.rincian td.num { text-align: right; }
+  table.rincian td.center { text-align: center; }
+  table.rincian tr { page-break-inside: avoid; }
+  table.rincian thead { display: table-header-group; }
+  table.rincian tfoot td { font-weight: bold; background: #f5f5f5; }
+
+  .terbilang { font-style: italic; margin-bottom: 5mm; }
+
+  .pasal { margin-bottom: 4mm; }
+  .pasal h2 { font-size: 11pt; margin: 0 0 1mm 0; }
+
+  .ttd {
+    margin-top: 12mm;
+    width: 100%;
+    page-break-inside: avoid;
+  }
+  .ttd table { width: 100%; border-collapse: collapse; }
+  .ttd td { width: 50%; text-align: center; vertical-align: top; }
+  .ttd .ruang { height: 26mm; }
+  .ttd .nama { font-weight: bold; text-decoration: underline; }
+
+  .catatan { font-size: 9pt; color: #444; margin-top: 6mm; border-top: 0.5pt solid #999; padding-top: 2mm; }
+</style>
+</head>
+<body>
+
+<div class="kop">
+  {% if org_logo %}<img src="{{ org_logo }}" alt="" />{% endif %}
+  <div>
+    <div class="org-name">{{ org_name }}</div>
+    <div class="org-address">{{ org_address }}</div>
+  </div>
+</div>
+
+<div class="judul">
+  <h1>Surat Perintah Kerja</h1>
+  <div class="nomor">Nomor: {{ spk.number }}</div>
+</div>
+
+<p>
+  Pada hari ini, {{ spk.issued_date | tanggal_id }}, {{ org_name }} memberikan perintah kerja
+  kepada penyedia tersebut di bawah ini untuk melaksanakan pekerjaan sebagaimana diuraikan
+  dalam surat ini.
+</p>
+
+<table class="meta">
+  <tr>
+    <td class="label">Nama Penyedia</td><td class="sep">:</td>
+    <td>{{ vendor.company_name }}</td>
+  </tr>
+  <tr>
+    <td class="label">NPWP</td><td class="sep">:</td>
+    <td>{{ vendor.npwp }}</td>
+  </tr>
+  <tr>
+    <td class="label">Alamat</td><td class="sep">:</td>
+    <td>{{ vendor.address }}, {{ vendor.city }}</td>
+  </tr>
+  <tr>
+    <td class="label">Rekening</td><td class="sep">:</td>
+    <td>{{ vendor.bank_name }}{% if vendor.bank_account_no %} &mdash; {{ vendor.bank_account_no }}{% endif %}</td>
+  </tr>
+  <tr>
+    <td class="label">Nama Pekerjaan</td><td class="sep">:</td>
+    <td>{{ project.name }}</td>
+  </tr>
+  <tr>
+    <td class="label">Kode Pengadaan</td><td class="sep">:</td>
+    <td>{{ project.code }}</td>
+  </tr>
+  <tr>
+    <td class="label">Jangka Waktu</td><td class="sep">:</td>
+    <td>{{ spk.start_date | tanggal_id }} s.d. {{ spk.end_date | tanggal_id }}</td>
+  </tr>
+</table>
+
+<div class="pasal">
+  <h2>Pasal 1 &mdash; Lingkup Pekerjaan</h2>
+  <p>{{ spk.work_description }}</p>
+</div>
+
+<div class="pasal">
+  <h2>Pasal 2 &mdash; Rincian dan Nilai Pekerjaan</h2>
+  <table class="rincian">
+    <thead>
+      <tr>
+        <th style="width: 10mm;">No</th>
+        <th>Uraian Pekerjaan</th>
+        <th style="width: 18mm;">Satuan</th>
+        <th style="width: 18mm;">Volume</th>
+        <th style="width: 30mm;">Harga Satuan</th>
+        <th style="width: 32mm;">Jumlah</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td class="center">{{ item.line_no }}</td>
+        <td>{{ item.description }}</td>
+        <td class="center">{{ item.unit }}</td>
+        <td class="num">{{ item.quantity }}</td>
+        <td class="num">{{ item.unit_price | rupiah }}</td>
+        <td class="num">{{ item.subtotal | rupiah }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="5" style="text-align: right;">Total</td>
+        <td class="num">{{ spk.total_amount | rupiah }}</td>
+      </tr>
+    </tfoot>
+  </table>
+  <p class="terbilang">
+    Terbilang: {{ spk.total_amount | terbilang }} rupiah.
+  </p>
+</div>
+
+{% if spk.payment_terms %}
+<div class="pasal">
+  <h2>Pasal 3 &mdash; Cara Pembayaran</h2>
+  <p>{{ spk.payment_terms }}</p>
+</div>
+{% endif %}
+
+{% if spk.penalty_clause %}
+<div class="pasal">
+  <h2>Pasal 4 &mdash; Sanksi dan Denda</h2>
+  <p>{{ spk.penalty_clause }}</p>
+</div>
+{% endif %}
+
+<div class="ttd">
+  <table>
+    <tr>
+      <td>
+        <div>Untuk dan atas nama Penyedia,</div>
+        <div>{{ vendor.company_name }}</div>
+        <div class="ruang"></div>
+        <div class="nama">&nbsp;</div>
+        <div>Direktur</div>
+      </td>
+      <td>
+        <div>{{ vendor.city | title }}, {{ spk.issued_date | tanggal_id }}</div>
+        <div>{{ org_name }}</div>
+        <div class="ruang"></div>
+        <div class="nama">{{ spk.signatory_name }}</div>
+        <div>{{ spk.signatory_position }}</div>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div class="catatan">
+  Dokumen ini diterbitkan melalui sistem SIMAVEN dan sah tanpa memerlukan cap basah
+  apabila telah ditandatangani secara elektronik.
+</div>
+
+</body>
+</html>

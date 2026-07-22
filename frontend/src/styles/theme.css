@@ -1,0 +1,89 @@
+:root {
+  /* Color Palette - SIMAVEN Theme (Green/Teal) */
+  --background: 0 0% 100%;
+  --foreground: 222.2 47.4% 11.2%;
+
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 47.4% 11.2%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 47.4% 11.2%;
+
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+
+  --primary: 160 84% 39%; /* Emerald-500 for SIMAVEN green */
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+
+  --accent: 174 72% 56%; /* Teal-400 accent */
+  --accent-foreground: 0 0% 100%;
+
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+
+  --ring: 160 84% 39%;
+
+  --radius: 0.5rem;
+
+  /* SIMAVEN Brand Colors */
+  --simaven-green: 160 84% 39%;
+  --simaven-teal: 174 72% 56%;
+  
+  /* Bank Mandiri Brand Colors */
+  --mandiri-blue: 210 100% 25%;
+  --mandiri-yellow: 45 100% 50%;
+  
+  /* Status Colors */
+  --success: 142 71% 45%;
+  --warning: 38 92% 50%;
+  --info: 199 89% 48%;
+  
+  /* Neutral Grays */
+  --gray-50: 210 20% 98%;
+  --gray-100: 214 32% 91%;
+  --gray-200: 213 27% 84%;
+  --gray-300: 211 24% 72%;
+  --gray-400: 214 20% 57%;
+  --gray-500: 215 16% 47%;
+  --gray-600: 215 19% 35%;
+  --gray-700: 215 25% 27%;
+  --gray-800: 217 33% 17%;
+  --gray-900: 222 47% 11%;
+}
+
+.dark {
+  --background: 224 71% 4%;
+  --foreground: 213 31% 91%;
+
+  --muted: 223 47% 11%;
+  --muted-foreground: 215.4 16.3% 56.9%;
+
+  --popover: 224 71% 4%;
+  --popover-foreground: 215 20.2% 65.1%;
+
+  --card: 224 71% 4%;
+  --card-foreground: 213 31% 91%;
+
+  --border: 216 34% 17%;
+  --input: 216 34% 17%;
+
+  --primary: 210 40% 98%;
+  --primary-foreground: 222.2 47.4% 1.2%;
+
+  --secondary: 222.2 47.4% 11.2%;
+  --secondary-foreground: 210 40% 98%;
+
+  --accent: 216 34% 17%;
+  --accent-foreground: 210 40% 98%;
+
+  --destructive: 0 63% 31%;
+  --destructive-foreground: 210 40% 98%;
+
+  --ring: 216 34% 17%;
+}
