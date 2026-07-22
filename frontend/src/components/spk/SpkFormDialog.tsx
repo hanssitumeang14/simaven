@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Plus, Trash2 } from 'lucide-react'
-import { useFieldArray, useForm } from 'react-hook-form'
+import { Controller, useFieldArray, useForm } from 'react-hook-form'
 import { z } from 'zod'
 
 import type { SpkCreateInput } from '@/api/spk'
@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { CurrencyInput } from '@/components/ui/currency-input'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -84,8 +85,8 @@ export function SpkFormDialog({
       work_description: '',
       payment_terms: '',
       penalty_clause: '',
-      signatory_name: '',
-      signatory_position: '',
+      signatory_name: 'Dr. dr. Iwan Dakota, Sp.JP(K), MARS, FACC, FESC',
+      signatory_position: 'Direktur Utama Rumah Sakit Jantung dan Pembuluh Darah Harapan Kita',
       items: [EMPTY_ITEM],
     },
   })
@@ -189,11 +190,16 @@ export function SpkFormDialog({
                     <FieldError message={errors.items?.[index]?.quantity?.message} />
                   </div>
                   <div className="col-span-2">
-                    <Input
-                      type="number"
-                      step="1"
-                      placeholder="Harga satuan"
-                      {...register(`items.${index}.unit_price`)}
+                    <Controller
+                      control={control}
+                      name={`items.${index}.unit_price`}
+                      render={({ field }) => (
+                        <CurrencyInput
+                          placeholder="Harga satuan"
+                          value={field.value ? String(field.value) : ''}
+                          onChange={(v) => field.onChange(v ? Number(v) : 0)}
+                        />
+                      )}
                     />
                     <FieldError message={errors.items?.[index]?.unit_price?.message} />
                   </div>

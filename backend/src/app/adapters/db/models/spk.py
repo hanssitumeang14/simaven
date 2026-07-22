@@ -49,6 +49,9 @@ class Spk(Base, UUIDMixin, TimestampMixin):
         default=SpkStatus.DRAFT,
         index=True,
     )
+    # Scan/foto SPK yang sudah ditandatangani & distempel, diunggah ulang oleh vendor
+    # (biasanya sebagai syarat pencairan Bank Garansi).
+    signed_document_path: Mapped[str | None] = mapped_column(String(255))
 
     project = relationship("Project", back_populates="spks", lazy="joined")
     vendor = relationship("Vendor", back_populates="spks", lazy="joined")

@@ -2,8 +2,9 @@ import uuid
 
 from fastapi import APIRouter, Query, status
 
-from app.adapters.db.models.enums import BankGroup, VendorStatus
-from app.entrypoints.deps import Pagination, VendorSvc
+from app.adapters.db.models.enums import BankGroup, UserRole, VendorStatus
+from app.entrypoints.deps import CurrentUser, Pagination, VendorSvc
+from app.lib.exceptions import ForbiddenError
 from app.service_layer.schemas.common import Page
 from app.service_layer.schemas.vendor import (
     VendorCreate,
@@ -29,6 +30,14 @@ async def list_vendors(
 @router.post("", response_model=VendorRead, status_code=status.HTTP_201_CREATED)
 async def create_vendor(payload: VendorCreate, service: VendorSvc):
     return await service.create(payload)
+
+
+@router.get("/me", response_model=VendorRead)
+async def get_my_vendor(user: CurrentUser, service: VendorSvc):
+    """Profil perusahaan milik akun vendor yang sedang login."""
+    if user.role != UserRole.VENDOR or not user.vendor_id:
+        raise ForbiddenError("Akun ini bukan akun vendor")
+    return await service.get(user.vendor_id)
 
 
 @router.get("/{vendor_id}", response_model=VendorRead)

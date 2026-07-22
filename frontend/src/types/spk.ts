@@ -29,6 +29,7 @@ export interface Spk {
   signatory_name: string
   signatory_position: string
   status: SpkStatus
+  signed_document_path: string | null
   items: SpkItem[]
   created_at: string
   updated_at: string
@@ -39,4 +40,5 @@ export interface SpkListQuery {
   size?: number
   status?: SpkStatus
   project_id?: string
+  vendor_id?: string
 }

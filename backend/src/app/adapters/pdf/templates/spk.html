@@ -191,11 +191,11 @@
         <div>Untuk dan atas nama Penyedia,</div>
         <div>{{ vendor.company_name }}</div>
         <div class="ruang"></div>
-        <div class="nama">&nbsp;</div>
+        <div class="nama">{{ vendor.director_name }}</div>
         <div>Direktur</div>
       </td>
       <td>
-        <div>{{ vendor.city | title }}, {{ spk.issued_date | tanggal_id }}</div>
+        <div>{{ org_city }}, {{ spk.issued_date | tanggal_id }}</div>
         <div>{{ org_name }}</div>
         <div class="ruang"></div>
         <div class="nama">{{ spk.signatory_name }}</div>

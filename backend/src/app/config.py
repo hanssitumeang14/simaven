@@ -20,10 +20,15 @@ class Settings(BaseSettings):
 
     CORS_ORIGINS: list[str] = ["http://localhost:5173"]
 
+    JWT_SECRET_KEY: str = "change-me-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRE_MINUTES: int = 60 * 24 * 7
+
     # Dipakai sebagai kop surat pada dokumen SPK
-    ORG_NAME: str = "RSAB Harapan Kita"
+    ORG_NAME: str = "RSJPD Harapan Kita"
     ORG_ADDRESS: str = "Jl. Letjen S. Parman Kav. 87, Slipi, Jakarta Barat 11420"
-    ORG_LOGO_PATH: str = ""
+    ORG_CITY: str = "Jakarta"
+    ORG_LOGO_PATH: str = "logo.png"
 
     @property
     def is_local(self) -> bool:

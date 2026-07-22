@@ -4,7 +4,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.adapters.db.models.base import Base, TimestampMixin, UUIDMixin
-from app.adapters.db.models.enums import BankGroup, VendorStatus
+from app.adapters.db.models.enums import BankGroup, VendorCategory, VendorStatus
 
 # JSONB di Postgres, JSON biasa di SQLite (dipakai saat test)
 JsonType = JSON().with_variant(JSONB, "postgresql")
@@ -16,6 +16,11 @@ class Vendor(Base, UUIDMixin, TimestampMixin):
     npwp: Mapped[str] = mapped_column(String(25), unique=True, index=True, nullable=False)
     company_name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     company_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    director_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    # Kosong untuk vendor lama sebelum fitur klasifikasi ada.
+    category: Mapped[VendorCategory | None] = mapped_column(
+        SAEnum(VendorCategory, name="vendor_category", native_enum=False, length=30)
+    )
     city: Mapped[str] = mapped_column(String(100), nullable=False)
     address: Mapped[str] = mapped_column(String(500), nullable=False)
     email: Mapped[str] = mapped_column(String(255), nullable=False)

@@ -4,6 +4,9 @@ export type VendorStatus = (typeof VENDOR_STATUS)[number]
 export const BANK_GROUP = ['Mandiri', 'Bank Lainnya'] as const
 export type BankGroup = (typeof BANK_GROUP)[number]
 
+export const VENDOR_CATEGORY = ['Vendor Operasional', 'Vendor Pengadaan', 'Cleaning Service'] as const
+export type VendorCategory = (typeof VENDOR_CATEGORY)[number]
+
 /** 5C profiling, skala 0-100 */
 export interface FinancialScore {
   character?: number | null
@@ -26,6 +29,8 @@ export interface Vendor {
   npwp: string
   company_name: string
   company_type: string
+  director_name: string
+  category: VendorCategory | null
   city: string
   address: string
   email: string

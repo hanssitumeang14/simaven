@@ -5,16 +5,18 @@ from decimal import Decimal
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.adapters.db.models.enums import SpkStatus
+from app.adapters.db.models.enums import SpkStatus, UserRole
 from app.adapters.db.models.spk import Spk, SpkItem
+from app.adapters.db.models.user import User
 from app.adapters.db.repositories.project import ProjectRepository
 from app.adapters.db.repositories.spk import SpkRepository
 from app.adapters.db.repositories.vendor import VendorRepository
 from app.adapters.pdf.renderer import PdfRenderer
-from app.lib.exceptions import ConflictError, NotFoundError
+from app.lib.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.lib.logging import get_logger
 from app.service_layer.schemas.common import Page, PageParams
 from app.service_layer.schemas.spk import SpkCreate, SpkRead, SpkUpdate
+from app.service_layer.services.project import ProjectService
 
 _LOGGER = get_logger(__name__)
 
@@ -38,9 +40,14 @@ class SpkService:
         return spk
 
     async def list(
-        self, params: PageParams, *, status: SpkStatus | None = None, project_id=None
+        self,
+        params: PageParams,
+        *,
+        status: SpkStatus | None = None,
+        project_id=None,
+        vendor_id=None,
     ) -> Page[SpkRead]:
-        stmt = self.repo.build_query(status=status, project_id=project_id)
+        stmt = self.repo.build_query(status=status, project_id=project_id, vendor_id=vendor_id)
         rows, total = await self.repo.list(offset=params.offset, limit=params.size, stmt=stmt)
         return Page[SpkRead](
             items=[SpkRead.model_validate(r) for r in rows],
@@ -144,12 +151,37 @@ class SpkService:
         spk.status = SpkStatus.ISSUED
         await self.session.flush()
         await self.session.refresh(spk)
+        await ProjectService(self.session).mark_spk_issued(spk.project_id, spk.number)
         _LOGGER.info("spk_issued", spk_id=str(spk.id), number=spk.number)
         return spk
+
+    async def delete(self, spk_id: uuid.UUID) -> None:
+        """Hanya SPK berstatus draft yang boleh dihapus — yang sudah terbit adalah
+        dokumen resmi dan sudah tercatat di timeline pengadaan."""
+        spk = await self.get(spk_id)
+        if spk.status != SpkStatus.DRAFT:
+            raise ConflictError("SPK yang sudah diterbitkan tidak bisa dihapus")
+        await self.session.delete(spk)
+        await self.session.flush()
+        _LOGGER.info("spk_deleted", spk_id=str(spk.id), number=spk.number)
 
     async def render_pdf(self, spk_id: uuid.UUID) -> bytes:
         spk = await self.get(spk_id)
         return self.renderer.render_spk(spk)
+
+    async def upload_signed_document(
+        self, spk_id: uuid.UUID, user: User, document_path: str
+    ) -> Spk:
+        """Vendor mengunggah ulang scan/foto SPK yang sudah ditandatangani & distempel
+        (biasanya diminta sebagai syarat pencairan Bank Garansi)."""
+        spk = await self.get(spk_id)
+        if user.role != UserRole.VENDOR or spk.vendor_id != user.vendor_id:
+            raise ForbiddenError("Hanya vendor pemilik SPK ini yang bisa mengunggah dokumen")
+        spk.signed_document_path = document_path
+        await self.session.flush()
+        await self.session.refresh(spk)
+        _LOGGER.info("spk_signed_document_uploaded", spk_id=str(spk.id))
+        return spk
 
     @staticmethod
     def format_number(sequence_no: int, issued_date: date) -> str:

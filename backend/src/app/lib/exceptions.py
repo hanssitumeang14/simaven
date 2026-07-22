@@ -21,6 +21,16 @@ class ConflictError(DomainError):
     code = "conflict"
 
 
+class AuthenticationError(DomainError):
+    status_code = 401
+    code = "invalid_credentials"
+
+
+class ForbiddenError(DomainError):
+    status_code = 403
+    code = "forbidden"
+
+
 class ValidationError(DomainError):
     status_code = 422
     code = "validation_error"

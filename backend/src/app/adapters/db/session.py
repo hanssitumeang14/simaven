@@ -19,6 +19,7 @@ def get_engine() -> AsyncEngine:
     if not settings.DATABASE_URL.startswith("sqlite"):
         kwargs["pool_size"] = settings.DB_POOL_SIZE
         kwargs["max_overflow"] = settings.DB_MAX_OVERFLOW
+        kwargs["connect_args"] = {"ssl": "require", "statement_cache_size": 0}
     return create_async_engine(settings.DATABASE_URL, **kwargs)
 
 

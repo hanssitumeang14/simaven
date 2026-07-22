@@ -6,6 +6,8 @@ export interface VendorCreateInput {
   npwp: string
   company_name: string
   company_type: string
+  director_name: string
+  category: string
   city: string
   address: string
   email: string
@@ -26,6 +28,7 @@ export interface VerificationInput {
 export const vendorApi = {
   list: (query: VendorListQuery) => api.get<Page<Vendor>>('/vendors', { ...query }),
   get: (id: string) => api.get<Vendor>(`/vendors/${id}`),
+  me: () => api.get<Vendor>('/vendors/me'),
   create: (input: VendorCreateInput) => api.post<Vendor>('/vendors', input),
   update: (id: string, input: VendorUpdateInput) => api.patch<Vendor>(`/vendors/${id}`, input),
   updateVerification: (id: string, input: VerificationInput) =>

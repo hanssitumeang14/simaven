@@ -87,6 +87,7 @@ class PdfRenderer:
             items=spk.items,
             org_name=settings.ORG_NAME,
             org_address=settings.ORG_ADDRESS,
+            org_city=settings.ORG_CITY,
             org_logo=settings.ORG_LOGO_PATH,
         )
 

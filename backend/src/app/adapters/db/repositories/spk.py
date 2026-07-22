@@ -19,10 +19,12 @@ class SpkRepository(BaseRepository[Spk]):
         current = (await self.session.execute(stmt)).scalar_one()
         return int(current) + 1
 
-    def build_query(self, *, status: SpkStatus | None = None, project_id=None):
+    def build_query(self, *, status: SpkStatus | None = None, project_id=None, vendor_id=None):
         stmt = select(Spk)
         if status:
             stmt = stmt.where(Spk.status == status)
         if project_id:
             stmt = stmt.where(Spk.project_id == project_id)
+        if vendor_id:
+            stmt = stmt.where(Spk.vendor_id == vendor_id)
         return stmt.order_by(Spk.year.desc(), Spk.sequence_no.desc())

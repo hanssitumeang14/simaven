@@ -4,8 +4,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.adapters.db.session import get_engine
+from app.adapters.storage.local import UPLOAD_ROOT
 from app.config import settings
 from app.entrypoints.router import api_router, root_router
 from app.lib.exceptions import DomainError
@@ -26,7 +28,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 def create_app() -> FastAPI:
     app = FastAPI(
         title="SIMAVEN API",
-        description="Vendor Management System - RSAB Harapan Kita",
+        description="Vendor Management System - RSJPD Harapan Kita",
         version="0.1.0",
         lifespan=lifespan,
         docs_url="/docs",
@@ -49,6 +51,9 @@ def create_app() -> FastAPI:
             status_code=exc.status_code,
             content={"code": exc.code, "message": exc.message},
         )
+
+    UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
+    app.mount("/uploads", StaticFiles(directory=UPLOAD_ROOT), name="uploads")
 
     app.include_router(root_router)
     app.include_router(api_router)

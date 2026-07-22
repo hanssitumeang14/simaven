@@ -1,3 +1,6 @@
 .DS_Store
 *.log
 .env
+
+# Generated SPK PDFs from local testing
+/SPK-*.pdf

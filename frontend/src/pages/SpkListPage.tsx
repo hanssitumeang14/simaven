@@ -1,4 +1,4 @@
-import { Download, FileText, Lock } from 'lucide-react'
+import { Download, FileText, Lock, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 import { spkApi } from '@/api/spk'
@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { useDownloadSpkPdf, useIssueSpk, useSpkList } from '@/hooks/useSpk'
+import { useDeleteSpk, useDownloadSpkPdf, useIssueSpk, useSpkList } from '@/hooks/useSpk'
 import { formatRupiah, formatTanggal } from '@/lib/format'
 import type { SpkStatus } from '@/types/spk'
 
@@ -28,6 +28,7 @@ export function SpkListPage() {
   const { data, isLoading, isError } = useSpkList({ page, size: 20 })
   const issueSpk = useIssueSpk()
   const downloadPdf = useDownloadSpkPdf()
+  const deleteSpk = useDeleteSpk()
 
   if (isLoading) return <p className="p-6 text-muted-foreground">Memuat data SPK…</p>
   if (isError) return <p className="p-6 text-destructive">Data SPK gagal dimuat. Coba muat ulang.</p>
@@ -91,15 +92,28 @@ export function SpkListPage() {
                     PDF
                   </Button>
                   {spk.status === 'draft' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={issueSpk.isPending}
-                      onClick={() => issueSpk.mutate(spk.id)}
-                    >
-                      <Lock className="mr-1 h-4 w-4" />
-                      Terbitkan
-                    </Button>
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={issueSpk.isPending}
+                        onClick={() => issueSpk.mutate(spk.id)}
+                      >
+                        <Lock className="mr-1 h-4 w-4" />
+                        Terbitkan
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        disabled={deleteSpk.isPending}
+                        onClick={() => {
+                          if (confirm(`Hapus draft SPK ${spk.number}?`)) deleteSpk.mutate(spk.id)
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </>
                   )}
                 </TableCell>
               </TableRow>

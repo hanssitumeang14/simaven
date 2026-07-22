@@ -20,6 +20,7 @@ async def _seed_project(client: AsyncClient, vendor_id: str) -> dict:
                 "budget": "173531000",
                 "hps": "173531000",
                 "bank": "Mandiri",
+                "vendor_category": "Vendor Pengadaan",
             },
         )
     ).json()
@@ -106,8 +107,45 @@ async def test_download_pdf(client: AsyncClient, vendor_payload: dict) -> None:
     project = await _seed_project(client, vendor["id"])
     spk = (await client.post("/api/v1/spk", json=_spk_payload(project["id"], vendor["id"]))).json()
 
-    resp = await client.get(f"/api/v1/spk/{spk['id']}/pdf")
+    rs = await client.post(
+        "/api/v1/auth/register",
+        json={"email": "staff-pdf@simaven.id", "full_name": "Staff RS", "password": "supersecret123"},
+    )
+    token = rs.json()["access_token"]
+
+    resp = await client.get(
+        f"/api/v1/spk/{spk['id']}/pdf", headers={"Authorization": f"Bearer {token}"}
+    )
     assert resp.status_code == 200
     assert resp.headers["content-type"] == "application/pdf"
     assert resp.content.startswith(b"%PDF")
     assert "001-SPK-VII-2026" in resp.headers["content-disposition"]
+
+
+async def test_download_pdf_rejected_without_auth(client: AsyncClient, vendor_payload: dict) -> None:
+    vendor = await _seed_verified_vendor(client, vendor_payload)
+    project = await _seed_project(client, vendor["id"])
+    spk = (await client.post("/api/v1/spk", json=_spk_payload(project["id"], vendor["id"]))).json()
+
+    resp = await client.get(f"/api/v1/spk/{spk['id']}/pdf")
+    assert resp.status_code == 401
+
+
+async def test_download_pdf_rejected_for_other_vendor(
+    client: AsyncClient, vendor_payload: dict
+) -> None:
+    vendor = await _seed_verified_vendor(client, vendor_payload)
+    project = await _seed_project(client, vendor["id"])
+    spk = (await client.post("/api/v1/spk", json=_spk_payload(project["id"], vendor["id"]))).json()
+
+    other_payload = {**vendor_payload, "npwp": "77.777.777.7-777.000", "email": "other-spk@example.co.id"}
+    other_reg = await client.post(
+        "/api/v1/auth/register-vendor",
+        json={"vendor": other_payload, "password": "otherpass123"},
+    )
+    other_token = other_reg.json()["access_token"]
+
+    resp = await client.get(
+        f"/api/v1/spk/{spk['id']}/pdf", headers={"Authorization": f"Bearer {other_token}"}
+    )
+    assert resp.status_code == 403

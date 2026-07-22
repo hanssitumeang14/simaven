@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
-from app.adapters.db.models.enums import BankGroup, VendorStatus
+from app.adapters.db.models.enums import BankGroup, VendorCategory, VendorStatus
 
 
 class FinancialScore(BaseModel):
@@ -28,6 +28,9 @@ class VendorBase(BaseModel):
     npwp: str = Field(..., min_length=15, max_length=25)
     company_name: str = Field(..., min_length=3, max_length=255)
     company_type: str = Field(..., max_length=20)
+    director_name: str = Field(..., min_length=3, max_length=255)
+    # Nullable supaya vendor lama (sebelum fitur ini ada) tetap valid saat dibaca.
+    category: VendorCategory | None = None
     city: str = Field(..., max_length=100)
     address: str = Field(..., max_length=500)
     email: EmailStr
@@ -43,12 +46,15 @@ class VendorBase(BaseModel):
 
 
 class VendorCreate(VendorBase):
-    pass
+    # Wajib diisi saat registrasi baru, walau nullable di VendorBase/VendorRead.
+    category: VendorCategory
 
 
 class VendorUpdate(BaseModel):
     company_name: str | None = None
     company_type: str | None = None
+    director_name: str | None = None
+    category: VendorCategory | None = None
     city: str | None = None
     address: str | None = None
     email: EmailStr | None = None

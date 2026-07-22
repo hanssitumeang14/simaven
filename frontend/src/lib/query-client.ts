@@ -26,6 +26,8 @@ export const queryKeys = {
     all: ['projects'] as const,
     list: (query: unknown) => ['projects', 'list', query] as const,
     detail: (id: string) => ['projects', 'detail', id] as const,
+    participants: (id: string) => ['projects', 'participants', id] as const,
+    timeline: (id: string) => ['projects', 'timeline', id] as const,
   },
   spk: {
     all: ['spk'] as const,

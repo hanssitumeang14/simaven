@@ -83,6 +83,7 @@ class SpkRead(BaseModel):
     signatory_name: str
     signatory_position: str
     status: SpkStatus
+    signed_document_path: str | None = None
     items: list[SpkItemRead] = []
     created_at: datetime
     updated_at: datetime

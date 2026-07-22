@@ -32,6 +32,13 @@ export function useVendor(id: string | undefined) {
   })
 }
 
+export function useMyVendor() {
+  return useQuery({
+    queryKey: queryKeys.vendors.detail('me'),
+    queryFn: () => vendorApi.me(),
+  })
+}
+
 export function useCreateVendor() {
   const qc = useQueryClient()
   return useMutation({

@@ -2,7 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.adapters.db.models.enums import ProjectStatus, ProjectType
-from app.adapters.db.models.project import Project
+from app.adapters.db.models.project import Project, ProjectVendor
 from app.adapters.db.repositories.base import BaseRepository
 
 
@@ -17,7 +17,10 @@ class ProjectRepository(BaseRepository[Project]):
         stmt = (
             select(Project)
             .where(Project.id == project_id)
-            .options(selectinload(Project.vendors), selectinload(Project.winning_vendor))
+            .options(
+                selectinload(Project.participants).selectinload(ProjectVendor.vendor),
+                selectinload(Project.winning_vendor),
+            )
         )
         return (await self.session.execute(stmt)).unique().scalar_one_or_none()
 
