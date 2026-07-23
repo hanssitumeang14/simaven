@@ -9,6 +9,7 @@ from app.adapters.db.session import get_db_session
 from app.lib.exceptions import AuthenticationError
 from app.lib.security import decode_access_token
 from app.service_layer.schemas.common import PageParams
+from app.service_layer.services.activity import ActivityService
 from app.service_layer.services.auth import AuthService
 from app.service_layer.services.project import ProjectService
 from app.service_layer.services.spk import SpkService
@@ -47,10 +48,15 @@ def get_auth_service(session: DbSession) -> AuthService:
     return AuthService(session)
 
 
+def get_activity_service(session: DbSession) -> ActivityService:
+    return ActivityService(session)
+
+
 VendorSvc = Annotated[VendorService, Depends(get_vendor_service)]
 ProjectSvc = Annotated[ProjectService, Depends(get_project_service)]
 SpkSvc = Annotated[SpkService, Depends(get_spk_service)]
 SppbSvc = Annotated[SppbService, Depends(get_sppb_service)]
+ActivitySvc = Annotated[ActivityService, Depends(get_activity_service)]
 AuthSvc = Annotated[AuthService, Depends(get_auth_service)]
 
 _bearer_scheme = HTTPBearer(auto_error=False)

@@ -42,7 +42,7 @@ export function useCreateSppb() {
     onSuccess: (sppb) => {
       qc.invalidateQueries({ queryKey: queryKeys.sppb.all })
       qc.invalidateQueries({ queryKey: queryKeys.projects.all })
-      toast.success(`SPPB ${sppb.number} diterbitkan`)
+      toast.success(`${sppb.number} diterbitkan`)
     },
     onError: reportError,
   })
@@ -55,7 +55,7 @@ export function useUpdateSppbProgress(sppbId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.sppb.all })
       qc.invalidateQueries({ queryKey: queryKeys.projects.all })
-      toast.success('Progres pengiriman barang disimpan')
+      toast.success('Progres berhasil disimpan')
     },
     onError: reportError,
   })

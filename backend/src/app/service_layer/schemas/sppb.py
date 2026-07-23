@@ -46,7 +46,10 @@ class SppbRead(BaseModel):
     sequence_no: int
     year: int
     project_id: uuid.UUID
+    project_code: str
+    project_name: str
     vendor_id: uuid.UUID
+    vendor_name: str
     issued_date: date
     notes: str | None
     items: list[SppbItemRead] = []

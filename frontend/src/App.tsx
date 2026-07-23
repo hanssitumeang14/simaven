@@ -4,6 +4,7 @@ import { LogOut } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
 
+import { NotificationBell } from '@/components/layout/NotificationBell'
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
 import { Toaster } from '@/components/ui/sonner'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
@@ -16,9 +17,9 @@ import { SpkListPage } from '@/pages/SpkListPage'
 import { SppbListPage } from '@/pages/SppbListPage'
 import { VendorHomePage } from '@/pages/vendor-portal/VendorHomePage'
 import { VendorSpkPage } from '@/pages/vendor-portal/VendorSpkPage'
-import { VendorSppbPage } from '@/pages/vendor-portal/VendorSppbPage'
 import { VendorTendersPage } from '@/pages/vendor-portal/VendorTendersPage'
 import { VendorWorkPage } from '@/pages/vendor-portal/VendorWorkPage'
+import { VendorWorkStatusPage } from '@/pages/vendor-portal/VendorWorkStatusPage'
 import { VendorListPage } from '@/pages/VendorListPage'
 import { BankProjectsPage } from '@/pages/bank-portal/BankProjectsPage'
 import { queryClient } from '@/lib/query-client'
@@ -29,7 +30,7 @@ const RS_NAV = [
   { to: '/vendors', label: 'Rekanan Bank' },
   { to: '/projects', label: 'Pengadaan' },
   { to: '/spk', label: 'SPK' },
-  { to: '/sppb', label: 'SPPB' },
+  { to: '/sppb', label: 'SPPB / SPMK' },
 ]
 
 const VENDOR_NAV = [
@@ -37,7 +38,7 @@ const VENDOR_NAV = [
   { to: '/vendor/tender', label: 'Tender Tersedia' },
   { to: '/vendor/pekerjaan', label: 'Pekerjaan Saya' },
   { to: '/vendor/spk', label: 'SPK Saya' },
-  { to: '/vendor/sppb', label: 'SPPB Saya' },
+  { to: '/vendor/status-pengerjaan', label: 'Status Pengerjaan' },
 ]
 
 const BANK_NAV = [
@@ -89,7 +90,12 @@ function Shell({ nav, children }: { nav: { to: string; label: string }[]; childr
   return (
     <div className="flex h-screen bg-gray-50">
       <Sidebar nav={nav} />
-      <main className="flex-1 overflow-auto">{children}</main>
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <header className="flex items-center justify-end border-b bg-white px-6 py-2">
+          <NotificationBell />
+        </header>
+        <main className="flex-1 overflow-auto">{children}</main>
+      </div>
     </div>
   )
 }
@@ -119,7 +125,7 @@ function VendorShell() {
         <Route path="/vendor/tender" element={<VendorTendersPage />} />
         <Route path="/vendor/pekerjaan" element={<VendorWorkPage />} />
         <Route path="/vendor/spk" element={<VendorSpkPage />} />
-        <Route path="/vendor/sppb" element={<VendorSppbPage />} />
+        <Route path="/vendor/status-pengerjaan" element={<VendorWorkStatusPage />} />
         <Route path="*" element={<Navigate to="/vendor/profil" replace />} />
       </Routes>
     </Shell>

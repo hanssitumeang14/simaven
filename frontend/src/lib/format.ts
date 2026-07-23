@@ -24,6 +24,23 @@ export function formatTanggal(value: string | null | undefined): string {
   return Number.isNaN(date.getTime()) ? '-' : dateFormatter.format(date)
 }
 
+/** Waktu relatif singkat (mis. "5 menit lalu", "2 hari lalu"), dipakai di feed notifikasi. */
+export function formatRelativeTime(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '-'
+
+  const diffMs = Date.now() - date.getTime()
+  const diffMin = Math.round(diffMs / 60_000)
+
+  if (diffMin < 1) return 'Baru saja'
+  if (diffMin < 60) return `${diffMin} menit lalu`
+  const diffHour = Math.round(diffMin / 60)
+  if (diffHour < 24) return `${diffHour} jam lalu`
+  const diffDay = Math.round(diffHour / 24)
+  if (diffDay < 7) return `${diffDay} hari lalu`
+  return formatTanggal(value)
+}
+
 export function formatNpwp(value: string): string {
   const digits = value.replace(/\D/g, '')
   if (digits.length !== 15) return value

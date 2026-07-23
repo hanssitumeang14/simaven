@@ -1,6 +1,7 @@
 import uuid
+from datetime import datetime
 
-from sqlalchemy import ForeignKey, String, Uuid
+from sqlalchemy import DateTime, ForeignKey, String, Uuid
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -24,5 +25,7 @@ class User(Base, UUIDMixin, TimestampMixin):
     vendor_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid, ForeignKey("vendors.id", ondelete="CASCADE"), unique=True
     )
+    # Dipakai untuk hitung badge notifikasi belum dibaca (aktivitas timeline lawan peran).
+    last_seen_notifications_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     vendor = relationship("Vendor", lazy="noload")

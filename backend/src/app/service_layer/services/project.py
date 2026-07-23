@@ -360,12 +360,16 @@ class ProjectService:
         return project
 
     async def mark_sppb_issued(self, project_id: uuid.UUID, sppb_number: str) -> None:
-        """Dipanggil dari SppbService saat SPPB diterbitkan. Memajukan tahap ke SPPB."""
+        """Dipanggil dari SppbService saat SPPB/SPMK diterbitkan. Memajukan tahap ke SPPB.
+
+        Nomor dokumen sendiri sudah memuat label SPPB atau SPMK (lihat
+        SppbService.document_label), jadi catatan di sini tidak perlu menambah prefix lagi.
+        """
         project = await self.get(project_id)
         if project.stage == ProjectStage.SPK:
             await self.repo.update(project, stage=ProjectStage.SPPB)
         await self._log_event(
-            project_id, ProjectStage.SPPB, UserRole.RS, f"SPPB {sppb_number} diterbitkan"
+            project_id, ProjectStage.SPPB, UserRole.RS, f"{sppb_number} diterbitkan"
         )
 
     async def log_sppb_progress(self, project_id: uuid.UUID, note: str) -> None:

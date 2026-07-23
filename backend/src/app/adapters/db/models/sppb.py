@@ -42,6 +42,20 @@ class Sppb(Base, UUIDMixin, TimestampMixin):
         order_by="SppbItem.line_no",
     )
 
+    # Properti turunan (bukan kolom) — supaya SppbRead.model_validate(sppb, from_attributes=True)
+    # bisa langsung ambil kode/nama pengadaan dan nama vendor tanpa query terpisah di frontend.
+    @property
+    def project_code(self) -> str:
+        return self.project.code
+
+    @property
+    def project_name(self) -> str:
+        return self.project.name
+
+    @property
+    def vendor_name(self) -> str:
+        return self.vendor.company_name
+
 
 class SppbItem(Base, UUIDMixin, TimestampMixin):
     """Baris barang pesanan di dalam SPPB, dengan jumlah yang sudah dikirim vendor."""

@@ -84,13 +84,18 @@
 </div>
 
 <div class="judul">
-  <h1>Surat Pesanan Pembelian Barang</h1>
+  <h1>{{ doc_title }}</h1>
   <div class="nomor">Nomor: {{ sppb.number }}</div>
 </div>
 
 <p>
+  {% if is_barang %}
   Pada hari ini, {{ sppb.issued_date | tanggal_id }}, {{ org_name }} memesan barang kepada
   penyedia tersebut di bawah ini sesuai rincian dalam surat ini.
+  {% else %}
+  Pada hari ini, {{ sppb.issued_date | tanggal_id }}, {{ org_name }} memerintahkan penyedia
+  tersebut di bawah ini untuk memulai pekerjaan sesuai rincian dalam surat ini.
+  {% endif %}
 </p>
 
 <table class="meta">
@@ -117,15 +122,15 @@
 </table>
 
 <div class="pasal">
-  <h2>Rincian Barang Pesanan</h2>
+  <h2>{{ "Rincian Barang Pesanan" if is_barang else "Rincian Pekerjaan" }}</h2>
   <table class="rincian">
     <thead>
       <tr>
         <th style="width: 10mm;">No</th>
-        <th>Nama Barang</th>
+        <th>{{ "Nama Barang" if is_barang else "Uraian Pekerjaan" }}</th>
         <th style="width: 18mm;">Satuan</th>
-        <th style="width: 22mm;">Jumlah Dipesan</th>
-        <th style="width: 22mm;">Jumlah Dikirim</th>
+        <th style="width: 22mm;">{{ "Jumlah Dipesan" if is_barang else "Target" }}</th>
+        <th style="width: 22mm;">{{ "Jumlah Dikirim" if is_barang else "Tercapai" }}</th>
       </tr>
     </thead>
     <tbody>

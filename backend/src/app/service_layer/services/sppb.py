@@ -4,7 +4,7 @@ from decimal import Decimal
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.adapters.db.models.enums import ProjectStage, UserRole
+from app.adapters.db.models.enums import ProjectStage, ProjectType, UserRole
 from app.adapters.db.models.sppb import Sppb, SppbItem
 from app.adapters.db.models.user import User
 from app.adapters.db.repositories.project import ProjectRepository
@@ -21,6 +21,13 @@ _LOGGER = get_logger(__name__)
 ROMAN_MONTHS = [
     "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII",
 ]
+
+
+def document_label(project_type: ProjectType) -> str:
+    """Barang -> SPPB (Surat Pesanan Pembelian Barang).
+    Jasa/Konstruksi/Konsultansi -> SPMK (Surat Perintah Mulai Kerja) — vendor
+    non-barang tidak "memesan barang", jadi dokumennya bukan pesanan barang."""
+    return "SPPB" if project_type == ProjectType.BARANG else "SPMK"
 
 
 class SppbService:
@@ -61,7 +68,7 @@ class SppbService:
 
         year = payload.issued_date.year
         sequence_no = await self.repo.next_sequence_no(year)
-        number = self.format_number(sequence_no, payload.issued_date)
+        number = self.format_number(sequence_no, payload.issued_date, document_label(project.type))
 
         sppb = Sppb(
             number=number,
@@ -123,9 +130,11 @@ class SppbService:
 
         await self.session.flush()
         await self.session.refresh(sppb)
+        label = document_label(sppb.project.type)
+        verb = "pengiriman barang" if label == "SPPB" else "pengerjaan"
         await ProjectService(self.session).log_sppb_progress(
             sppb.project_id,
-            "Vendor melaporkan progres pengiriman barang: " + "; ".join(summary_parts),
+            f"Vendor melaporkan progres {verb}: " + "; ".join(summary_parts),
         )
         _LOGGER.info("sppb_progress_updated", sppb_id=str(sppb.id))
         return sppb
@@ -135,7 +144,7 @@ class SppbService:
         return self.renderer.render_sppb(sppb)
 
     @staticmethod
-    def format_number(sequence_no: int, issued_date) -> str:
-        """001/SPPB/VII/2026"""
+    def format_number(sequence_no: int, issued_date, label: str = "SPPB") -> str:
+        """001/SPPB/VII/2026 atau 001/SPMK/VII/2026 untuk vendor non-barang."""
         roman = ROMAN_MONTHS[issued_date.month - 1]
-        return f"{sequence_no:03d}/SPPB/{roman}/{issued_date.year}"
+        return f"{sequence_no:03d}/{label}/{roman}/{issued_date.year}"

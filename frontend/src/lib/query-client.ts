@@ -39,4 +39,7 @@ export const queryKeys = {
     list: (query: unknown) => ['sppb', 'list', query] as const,
     detail: (id: string) => ['sppb', 'detail', id] as const,
   },
+  activity: {
+    feed: ['activity', 'feed'] as const,
+  },
 }

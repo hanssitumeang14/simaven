@@ -35,6 +35,37 @@ function formatDateTime(value: string | null): string {
   return new Date(value).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })
 }
 
+/** Barang -> SPPB (Surat Pesanan Pembelian Barang). Jasa/Konstruksi/Konsultansi -> SPMK
+ * (Surat Perintah Mulai Kerja), karena vendor non-barang tidak "memesan barang". */
+function docLabel(project: Project): 'SPPB' | 'SPMK' {
+  return project.type === 'Barang' ? 'SPPB' : 'SPMK'
+}
+
+/** Persentase progres berdasarkan data tersimpan di server (bukan input draft yang belum disimpan). */
+function overallProgress(items: SppbItem[]): number {
+  const ordered = items.reduce((sum, item) => sum + Number(item.quantity_ordered), 0)
+  const delivered = items.reduce((sum, item) => sum + Number(item.quantity_delivered), 0)
+  if (ordered === 0) return 0
+  return Math.min(100, Math.round((delivered / ordered) * 100))
+}
+
+function ProgressBar({ percent }: { percent: number }) {
+  return (
+    <div className="mb-3">
+      <div className="mb-1 flex items-center justify-between text-xs text-gray-600">
+        <span>Progres pekerjaan</span>
+        <span className="font-medium">{percent}%</span>
+      </div>
+      <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
+        <div
+          className={`h-full rounded-full transition-all ${percent >= 100 ? 'bg-emerald-500' : 'bg-blue-400'}`}
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+    </div>
+  )
+}
+
 export function ProjectTimeline({ project, viewerRole = 'rs' }: ProjectTimelineProps) {
   const { data: events = [] } = useProjectTimeline(project.id)
   const currentIndex = PROJECT_STAGE.indexOf(project.stage)
@@ -304,12 +335,15 @@ function RsIssueSppbPanel({ project }: { project: Project }) {
     items.length > 0 &&
     items.every((item) => item.description && item.unit && item.quantity_ordered)
 
+  const label = docLabel(project)
+  const isBarang = label === 'SPPB'
+
   return (
-    <Panel title="Terbitkan SPPB">
+    <Panel title={`Terbitkan ${label}`}>
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <Label htmlFor="sppb_issued_date">Tanggal SPPB</Label>
+            <Label htmlFor="sppb_issued_date">Tanggal {label}</Label>
             <Input
               id="sppb_issued_date"
               type="date"
@@ -324,11 +358,11 @@ function RsIssueSppbPanel({ project }: { project: Project }) {
         </div>
 
         <div className="space-y-2">
-          <Label>Barang yang Dipesan</Label>
+          <Label>{isBarang ? 'Barang yang Dipesan' : 'Rincian Pekerjaan'}</Label>
           {items.map((item, index) => (
             <div key={index} className="flex items-center gap-2">
               <Input
-                placeholder="Nama barang"
+                placeholder={isBarang ? 'Nama barang' : 'Uraian pekerjaan'}
                 className="flex-1"
                 value={item.description}
                 onChange={(e) => updateItem(index, { description: e.target.value })}
@@ -342,7 +376,7 @@ function RsIssueSppbPanel({ project }: { project: Project }) {
               <Input
                 type="number"
                 min="0"
-                placeholder="Jumlah"
+                placeholder={isBarang ? 'Jumlah' : 'Target'}
                 className="w-24"
                 value={item.quantity_ordered}
                 onChange={(e) => updateItem(index, { quantity_ordered: e.target.value })}
@@ -363,7 +397,7 @@ function RsIssueSppbPanel({ project }: { project: Project }) {
             variant="outline"
             onClick={() => setItems((prev) => [...prev, { ...EMPTY_SPPB_ITEM }])}
           >
-            <Plus className="mr-1 h-4 w-4" /> Tambah Barang
+            <Plus className="mr-1 h-4 w-4" /> {isBarang ? 'Tambah Barang' : 'Tambah Pekerjaan'}
           </Button>
         </div>
 
@@ -379,7 +413,7 @@ function RsIssueSppbPanel({ project }: { project: Project }) {
             })
           }
         >
-          {createSppb.isPending ? 'Menerbitkan...' : 'Terbitkan SPPB'}
+          {createSppb.isPending ? 'Menerbitkan...' : `Terbitkan ${label}`}
         </Button>
       </div>
     </Panel>
@@ -390,16 +424,17 @@ function SppbIssuedPanel({ project, viewerRole }: { project: Project; viewerRole
   const { data: sppb } = useIssuedSppbForProject(project.id)
   const reportWorkStarted = useReportWorkStarted(project.id)
   const isVendor = viewerRole === 'vendor'
+  const label = docLabel(project)
 
-  if (!sppb) return <Panel>Memuat data SPPB...</Panel>
+  if (!sppb) return <Panel>Memuat data {label}...</Panel>
 
   return (
-    <Panel title={`SPPB ${sppb.number}`}>
+    <Panel title={`${label} ${sppb.number}`}>
       <p className="mb-2 text-sm text-gray-600">
         Diterbitkan {formatTanggal(sppb.issued_date)}
         {sppb.notes && ` — ${sppb.notes}`}
       </p>
-      <SppbItemsTable items={sppb.items} />
+      <SppbItemsTable items={sppb.items} isBarang={label === 'SPPB'} />
       <div className="mt-3 flex items-center gap-3">
         <a
           href={sppbApi.pdfUrl(sppb.id)}
@@ -407,7 +442,7 @@ function SppbIssuedPanel({ project, viewerRole }: { project: Project; viewerRole
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1 text-sm font-medium text-blue-700 hover:underline"
         >
-          Lihat PDF SPPB <ExternalLink className="h-3.5 w-3.5" />
+          Lihat PDF {label} <ExternalLink className="h-3.5 w-3.5" />
         </a>
         {isVendor && (
           <Button
@@ -431,18 +466,26 @@ function VendorSppbProgressPanel({ project }: { project: Project }) {
   const updateProgress = useUpdateSppbProgress(sppb?.id ?? '')
   const reportGoodsComplete = useReportGoodsComplete(project.id)
   const [values, setValues] = useState<Record<string, string>>({})
+  const isBarang = docLabel(project) === 'SPPB'
 
-  if (!sppb) return <Panel>Memuat data SPPB...</Panel>
+  if (!sppb) return <Panel>Memuat data {docLabel(project)}...</Panel>
+
+  const progress = overallProgress(sppb.items)
+  const isComplete = progress >= 100
 
   return (
     <Panel title="Sedang mengerjakan">
       <p className="mb-3 text-sm text-gray-600">
-        Dimulai {formatDateTime(project.work_started_at)}. Perbarui jumlah barang yang sudah
-        dikirim, lalu laporkan kalau pekerjaan sudah selesai.
+        Dimulai {formatDateTime(project.work_started_at)}.{' '}
+        {isBarang
+          ? 'Perbarui jumlah barang yang sudah dikirim, lalu laporkan kalau pekerjaan sudah selesai.'
+          : 'Perbarui progres yang sudah dicapai, lalu laporkan kalau pekerjaan sudah selesai.'}
       </p>
+      <ProgressBar percent={progress} />
       <SppbItemsTable
         items={sppb.items}
         editable
+        isBarang={isBarang}
         values={values}
         onChange={(itemId, value) => setValues((prev) => ({ ...prev, [itemId]: value }))}
       />
@@ -464,24 +507,32 @@ function VendorSppbProgressPanel({ project }: { project: Project }) {
         </Button>
         <Button
           size="sm"
-          disabled={reportGoodsComplete.isPending}
+          disabled={reportGoodsComplete.isPending || !isComplete}
+          title={isComplete ? undefined : 'Lengkapi progres hingga 100% sebelum melapor selesai'}
           onClick={() => reportGoodsComplete.mutate()}
         >
           Lapor Selesai
         </Button>
       </div>
+      {!isComplete && (
+        <p className="mt-2 text-xs text-gray-500">
+          Progres belum 100%, simpan dulu jumlah terbaru sebelum bisa melapor selesai.
+        </p>
+      )}
     </Panel>
   )
 }
 
 function RsSppbProgressPanel({ project, readOnlyNote }: { project: Project; readOnlyNote: string }) {
   const { data: sppb } = useIssuedSppbForProject(project.id)
+  const label = docLabel(project)
 
-  if (!sppb) return <Panel>Memuat data SPPB...</Panel>
+  if (!sppb) return <Panel>Memuat data {label}...</Panel>
 
   return (
-    <Panel title={`Progres SPPB ${sppb.number}`}>
-      <SppbItemsTable items={sppb.items} />
+    <Panel title={`Progres ${label} ${sppb.number}`}>
+      <ProgressBar percent={overallProgress(sppb.items)} />
+      <SppbItemsTable items={sppb.items} isBarang={label === 'SPPB'} />
       <p className="mt-3 text-sm text-gray-600">{readOnlyNote}</p>
     </Panel>
   )
@@ -490,11 +541,13 @@ function RsSppbProgressPanel({ project, readOnlyNote }: { project: Project; read
 function SppbItemsTable({
   items,
   editable,
+  isBarang = true,
   values,
   onChange,
 }: {
   items: SppbItem[]
   editable?: boolean
+  isBarang?: boolean
   values?: Record<string, string>
   onChange?: (itemId: string, value: string) => void
 }) {
@@ -502,9 +555,9 @@ function SppbItemsTable({
     <table className="w-full text-sm">
       <thead>
         <tr className="text-left text-xs text-gray-500">
-          <th className="pb-1 font-medium">Barang</th>
-          <th className="pb-1 text-right font-medium">Dipesan</th>
-          <th className="pb-1 text-right font-medium">Dikirim</th>
+          <th className="pb-1 font-medium">{isBarang ? 'Barang' : 'Pekerjaan'}</th>
+          <th className="pb-1 text-right font-medium">{isBarang ? 'Dipesan' : 'Target'}</th>
+          <th className="pb-1 text-right font-medium">{isBarang ? 'Dikirim' : 'Tercapai'}</th>
         </tr>
       </thead>
       <tbody>

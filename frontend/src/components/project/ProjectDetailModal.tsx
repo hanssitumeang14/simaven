@@ -78,6 +78,13 @@ export function ProjectDetailModal({ project, onClose }: ProjectDetailModalProps
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
+          {/* Timeline — di atas supaya panel aksi (Terbitkan SPPB/Invoice/dll) langsung
+              terlihat tanpa perlu scroll. */}
+          <div className="mb-6">
+            <h3 className="mb-4 text-lg font-semibold text-gray-900">Timeline Pengadaan</h3>
+            <ProjectTimeline project={project} />
+          </div>
+
           {/* Project Info */}
           <div className="mb-6">
             <h3 className="mb-4 text-lg font-semibold text-gray-900">Informasi Proyek</h3>
@@ -89,12 +96,6 @@ export function ProjectDetailModal({ project, onClose }: ProjectDetailModalProps
               <InfoField label="HPS" value={formatRupiah(project.hps)} />
               <InfoField label="Bank" value={project.bank ?? '-'} />
             </div>
-          </div>
-
-          {/* Timeline */}
-          <div className="mb-6">
-            <h3 className="mb-4 text-lg font-semibold text-gray-900">Timeline Pengadaan</h3>
-            <ProjectTimeline project={project} />
           </div>
 
           {/* Winning Vendor */}

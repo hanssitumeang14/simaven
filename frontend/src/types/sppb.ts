@@ -14,7 +14,10 @@ export interface Sppb {
   sequence_no: number
   year: number
   project_id: string
+  project_code: string
+  project_name: string
   vendor_id: string
+  vendor_name: string
   issued_date: string
   notes: string | null
   items: SppbItem[]

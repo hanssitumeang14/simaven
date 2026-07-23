@@ -4,6 +4,7 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from weasyprint import HTML
 
+from app.adapters.db.models.enums import ProjectType
 from app.adapters.db.models.spk import Spk
 from app.adapters.db.models.sppb import Sppb
 from app.config import settings
@@ -98,11 +99,15 @@ class PdfRenderer:
 
     def render_sppb_html(self, sppb: Sppb) -> str:
         template = self.env.get_template("sppb.html")
+        is_barang = sppb.project.type == ProjectType.BARANG
         return template.render(
             sppb=sppb,
             project=sppb.project,
             vendor=sppb.vendor,
             items=sppb.items,
+            doc_label="SPPB" if is_barang else "SPMK",
+            doc_title="Surat Pesanan Pembelian Barang" if is_barang else "Surat Perintah Mulai Kerja",
+            is_barang=is_barang,
             org_name=settings.ORG_NAME,
             org_address=settings.ORG_ADDRESS,
             org_city=settings.ORG_CITY,

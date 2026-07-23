@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { authApi, type LoginInput, type RegisterInput, type RegisterVendorInput } from '@/api/auth'
 import { ApiRequestError } from '@/lib/api-client'
 import { authToken } from '@/lib/auth-token'
+import { queryClient } from '@/lib/query-client'
 import type { User } from '@/types/user'
 
 interface AuthContextValue {
@@ -37,23 +38,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function login(input: LoginInput) {
     const res = await authApi.login(input)
     authToken.set(res.access_token)
+    // Cache react-query bersifat singleton lintas sesi SPA — kalau tidak dibersihkan,
+    // login akun lain di tab yang sama bisa sesaat menampilkan data cache akun sebelumnya.
+    queryClient.clear()
     setUser(res.user)
   }
 
   async function register(input: RegisterInput) {
     const res = await authApi.register(input)
     authToken.set(res.access_token)
+    queryClient.clear()
     setUser(res.user)
   }
 
   async function registerVendor(input: RegisterVendorInput) {
     const res = await authApi.registerVendor(input)
     authToken.set(res.access_token)
+    queryClient.clear()
     setUser(res.user)
   }
 
   function logout() {
     authToken.clear()
+    queryClient.clear()
     setUser(null)
   }
 
