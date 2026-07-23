@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Award, Building2, FileText, MessageCircle, Trash2, Users, X } from 'lucide-react'
+import { AlertTriangle, Award, Building2, FileText, MessageCircle, Trash2, Users, X } from 'lucide-react'
 
 import { ProjectTimeline } from '@/components/project/ProjectTimeline'
 import { Button } from '@/components/ui/button'
@@ -22,6 +22,9 @@ import {
 import { useVendors } from '@/hooks/useVendors'
 import { formatRupiah } from '@/lib/format'
 import type { Project, ProjectParticipant } from '@/types/project'
+import { average5C } from '@/types/vendor'
+
+const LOW_5C_THRESHOLD = 60
 
 interface ProjectDetailModalProps {
   project: Project
@@ -307,6 +310,9 @@ function ParticipantRow({
     corrected !== (participant.corrected_price ?? '') ||
     negotiated !== (participant.negotiated_price ?? '')
 
+  const avgScore = average5C(participant.vendor.financial_score)
+  const lowScore = avgScore !== null && avgScore < LOW_5C_THRESHOLD
+
   function handleSave() {
     updateParticipant.mutate({
       vendorId: participant.vendor_id,
@@ -317,6 +323,18 @@ function ParticipantRow({
     })
   }
 
+  function handleAward() {
+    if (
+      lowScore &&
+      !confirm(
+        `Skor 5C rata-rata vendor ini ${avgScore} (di bawah ${LOW_5C_THRESHOLD}). Tetap tetapkan sebagai pemenang?`,
+      )
+    ) {
+      return
+    }
+    onAward()
+  }
+
   return (
     <tr className={isWinner ? 'bg-yellow-50' : ''}>
       <td className="px-4 py-3 text-sm font-medium text-gray-900">
@@ -325,6 +343,15 @@ function ParticipantRow({
           <span className="ml-2 inline-flex items-center rounded bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">
             <Award className="mr-1 h-3 w-3" />
             Pemenang
+          </span>
+        )}
+        {lowScore && (
+          <span
+            className="ml-2 inline-flex items-center gap-1 rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700"
+            title="Skor 5C rata-rata rendah"
+          >
+            <AlertTriangle className="h-3 w-3" />
+            5C: {avgScore}
           </span>
         )}
         <div className="text-xs font-normal text-gray-500">{participant.vendor.npwp}</div>
@@ -348,12 +375,14 @@ function ParticipantRow({
           {!isWinner && (
             <Button
               size="sm"
-              onClick={onAward}
+              onClick={handleAward}
               disabled={awardPending || participant.vendor.status !== 'verified'}
               title={
                 participant.vendor.status !== 'verified'
                   ? 'Vendor belum terverifikasi'
-                  : 'Tetapkan sebagai pemenang'
+                  : lowScore
+                    ? `Skor 5C rata-rata rendah (${avgScore})`
+                    : 'Tetapkan sebagai pemenang'
               }
             >
               Tetapkan Menang

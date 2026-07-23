@@ -1,18 +1,28 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Building2,
   Check,
   FileText,
   Link as LinkIcon,
+  RefreshCw,
   Shield,
+  Sparkles,
   TrendingUp,
   Upload,
   X,
 } from 'lucide-react'
 
 import { projectApi } from '@/api/project'
-import { useUpdateVerification } from '@/hooks/useVendors'
-import { DOCUMENT_FIELDS, VERIFICATION_STEPS, type Vendor } from '@/types/vendor'
+import { useSuggested5C, useUpdateVendor, useUpdateVerification } from '@/hooks/useVendors'
+import {
+  average5C,
+  DOCUMENT_FIELDS,
+  FIVE_C_FIELDS,
+  has5CComplete,
+  VERIFICATION_STEPS,
+  type FinancialScore,
+  type Vendor,
+} from '@/types/vendor'
 
 interface VendorDetailModalProps {
   vendor: Vendor
@@ -48,14 +58,6 @@ const bankMandiriProducts = [
   },
 ]
 
-const FIVE_C = [
-  { key: 'character', label: 'Character (Karakter)', description: 'Integritas dan rekam jejak vendor' },
-  { key: 'capacity', label: 'Capacity (Kapasitas)', description: 'Kemampuan memenuhi kewajiban' },
-  { key: 'capital', label: 'Capital (Modal)', description: 'Kekuatan finansial perusahaan' },
-  { key: 'collateral', label: 'Collateral (Jaminan)', description: 'Aset yang dapat dijaminkan' },
-  { key: 'condition', label: 'Condition (Kondisi)', description: 'Kondisi ekonomi dan industri' },
-] as const
-
 const STATUS_LABEL: Record<string, string> = {
   pending: 'Menunggu',
   'need-verification': 'Perlu Verifikasi',
@@ -83,15 +85,7 @@ export function VendorDetailModal({ vendor, onClose }: VendorDetailModalProps) {
     { id: '5c' as const, label: 'Profil 5C', icon: TrendingUp },
   ]
 
-  const scores = vendor.financial_score
-  const overallScore = scores
-    ? Math.round(
-        (Object.values(scores).filter((v): v is number => v !== null && v !== undefined) as number[]).reduce(
-          (a, b) => a + b,
-          0,
-        ) / 5,
-      )
-    : null
+  const has5C = has5CComplete(vendor.financial_score)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -380,63 +374,7 @@ export function VendorDetailModal({ vendor, onClose }: VendorDetailModalProps) {
           )}
 
           {activeTab === '5c' && (
-            <div className="space-y-6">
-              <div className="mb-6 rounded-lg border border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50 p-6">
-                <h3 className="mb-2 text-xl font-semibold text-gray-900">Analisis 5C Vendor</h3>
-                <p className="text-sm text-gray-600">
-                  Penilaian komprehensif berdasarkan Character, Capacity, Capital, Collateral, dan
-                  Condition
-                </p>
-              </div>
-
-              {scores ? (
-                <div className="space-y-4">
-                  {FIVE_C.map((item) => {
-                    const score = scores[item.key] ?? 0
-                    return (
-                      <div key={item.key} className="rounded-lg border border-gray-200 p-4">
-                        <div className="mb-2 flex items-center justify-between">
-                          <div>
-                            <h4 className="font-semibold text-gray-900">{item.label}</h4>
-                            <p className="text-sm text-gray-600">{item.description}</p>
-                          </div>
-                          <div className="text-2xl font-bold text-emerald-600">{score}</div>
-                        </div>
-                        <div className="relative h-3 overflow-hidden rounded-full bg-gray-200">
-                          <div
-                            className={`absolute top-0 left-0 h-full rounded-full transition-all ${
-                              score >= 80 ? 'bg-emerald-500' : score >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-                            }`}
-                            style={{ width: `${score}%` }}
-                          />
-                        </div>
-                      </div>
-                    )
-                  })}
-
-                  {overallScore !== null && (
-                    <div className="mt-6 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 p-6 text-white">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="mb-1 text-lg font-semibold">Skor Keseluruhan</h4>
-                          <p className="text-sm text-white/90">Rata-rata dari semua kategori</p>
-                        </div>
-                        <div className="text-4xl font-bold">{overallScore}</div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="py-12 text-center">
-                  <TrendingUp className="mx-auto mb-4 h-16 w-16 text-gray-300" />
-                  <h3 className="mb-2 text-lg font-semibold text-gray-900">Belum Ada Penilaian 5C</h3>
-                  <p className="text-gray-600">
-                    Vendor ini belum memiliki profil 5C. Lengkapi verifikasi untuk mendapatkan
-                    penilaian.
-                  </p>
-                </div>
-              )}
-            </div>
+            <VendorFiveCTab vendor={vendor} />
           )}
         </div>
 
@@ -461,8 +399,9 @@ export function VendorDetailModal({ vendor, onClose }: VendorDetailModalProps) {
             {vendor.verification_step === 8 && vendor.status !== 'verified' && (
               <button
                 onClick={() => advanceToStep(8)}
-                disabled={updateVerification.isPending}
-                className="rounded-lg bg-emerald-500 px-6 py-2 font-medium text-white transition-colors hover:bg-emerald-600 disabled:opacity-50"
+                disabled={updateVerification.isPending || !has5C}
+                title={has5C ? undefined : 'Lengkapi Analisis 5C dulu di tab "Profil 5C"'}
+                className="rounded-lg bg-emerald-500 px-6 py-2 font-medium text-white transition-colors hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Tandai Sebagai Terverifikasi
               </button>
@@ -476,6 +415,198 @@ export function VendorDetailModal({ vendor, onClose }: VendorDetailModalProps) {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function VendorFiveCTab({ vendor }: { vendor: Vendor }) {
+  const complete = has5CComplete(vendor.financial_score)
+  const [editing, setEditing] = useState(!complete)
+  const [justSaved, setJustSaved] = useState(false)
+  const [draft, setDraft] = useState<Record<string, string>>({})
+  const suggestion = useSuggested5C(vendor.id, editing)
+  const updateVendor = useUpdateVendor(vendor.id)
+
+  // Tunggu prop `vendor` benar-benar berisi skor baru (dari refetch setelah invalidate)
+  // sebelum keluar dari mode edit — supaya tidak ada jeda kosong di antara form dan
+  // tampilan hasil saat query belum sempat refresh.
+  useEffect(() => {
+    if (justSaved && complete) {
+      setEditing(false)
+      setJustSaved(false)
+    }
+  }, [justSaved, complete])
+
+  function startEditing() {
+    const base = vendor.financial_score
+    setDraft(
+      Object.fromEntries(
+        FIVE_C_FIELDS.map(({ key }) => [key, base?.[key] != null ? String(base[key]) : '']),
+      ),
+    )
+    setEditing(true)
+  }
+
+  // Isi field yang masih kosong dengan saran otomatis — tidak menimpa nilai yang sudah
+  // tersimpan atau sudah diketik RS.
+  useEffect(() => {
+    if (!suggestion.data) return
+    setDraft((prev) => {
+      const next = { ...prev }
+      for (const { key } of FIVE_C_FIELDS) {
+        const suggested = suggestion.data[key]
+        if (!next[key] && suggested !== null && suggested !== undefined) {
+          next[key] = String(suggested)
+        }
+      }
+      return next
+    })
+  }, [suggestion.data])
+
+  function recomputeSuggestion() {
+    setDraft(Object.fromEntries(FIVE_C_FIELDS.map(({ key }) => [key, ''])))
+    suggestion.refetch()
+  }
+
+  function handleSave() {
+    const payload = Object.fromEntries(
+      FIVE_C_FIELDS.map(({ key }) => [key, Number(draft[key])]),
+    ) as unknown as FinancialScore
+    updateVendor.mutate({ financial_score: payload }, { onSuccess: () => setJustSaved(true) })
+  }
+
+  const overallScore = average5C(vendor.financial_score)
+  const allFilled = FIVE_C_FIELDS.every(({ key }) => draft[key] !== undefined && draft[key] !== '')
+
+  return (
+    <div className="space-y-6">
+      <div className="mb-6 rounded-lg border border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50 p-6">
+        <h3 className="mb-2 text-xl font-semibold text-gray-900">Analisis 5C Vendor</h3>
+        <p className="text-sm text-gray-600">
+          Penilaian komprehensif berdasarkan Character, Capacity, Capital, Collateral, dan
+          Condition
+        </p>
+      </div>
+
+      {!editing && complete && (
+        <div className="space-y-4">
+          {FIVE_C_FIELDS.map((item) => {
+            const score = vendor.financial_score?.[item.key] ?? 0
+            return (
+              <div key={item.key} className="rounded-lg border border-gray-200 p-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <div>
+                    <h4 className="font-semibold text-gray-900">{item.label}</h4>
+                    <p className="text-sm text-gray-600">{item.description}</p>
+                  </div>
+                  <div className="text-2xl font-bold text-emerald-600">{score}</div>
+                </div>
+                <div className="relative h-3 overflow-hidden rounded-full bg-gray-200">
+                  <div
+                    className={`absolute top-0 left-0 h-full rounded-full transition-all ${
+                      score >= 80 ? 'bg-emerald-500' : score >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                    }`}
+                    style={{ width: `${score}%` }}
+                  />
+                </div>
+              </div>
+            )
+          })}
+
+          {overallScore !== null && (
+            <div className="mt-6 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="mb-1 text-lg font-semibold">Skor Keseluruhan</h4>
+                  <p className="text-sm text-white/90">Rata-rata dari semua kategori</p>
+                </div>
+                <div className="text-4xl font-bold">{overallScore}</div>
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={startEditing}
+            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Update Penilaian
+          </button>
+        </div>
+      )}
+
+      {editing && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+            <span className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 shrink-0" />
+              {suggestion.isFetching
+                ? 'Menghitung saran dari data vendor...'
+                : 'Character, Capacity, Capital, dan Collateral disarankan otomatis dari data yang sudah ada (dokumen, riwayat proyek, Bank Garansi). Condition perlu diisi manual. Semua angka bisa dikoreksi sebelum disimpan.'}
+            </span>
+            <button
+              type="button"
+              onClick={recomputeSuggestion}
+              className="inline-flex shrink-0 items-center gap-1 font-medium hover:underline"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              Hitung ulang
+            </button>
+          </div>
+
+          {FIVE_C_FIELDS.map((item) => (
+            <div key={item.key} className="rounded-lg border border-gray-200 p-4">
+              <div className="mb-2 flex items-center justify-between gap-4">
+                <div>
+                  <h4 className="font-semibold text-gray-900">{item.label}</h4>
+                  <p className="text-sm text-gray-600">{item.description}</p>
+                </div>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={draft[item.key] ?? ''}
+                  onChange={(e) => setDraft((prev) => ({ ...prev, [item.key]: e.target.value }))}
+                  placeholder={item.key === 'condition' ? 'Isi manual' : '0-100'}
+                  className="w-20 rounded-md border border-gray-300 px-2 py-1 text-right text-lg font-bold text-emerald-600"
+                />
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={draft[item.key] || 0}
+                onChange={(e) => setDraft((prev) => ({ ...prev, [item.key]: e.target.value }))}
+                className="w-full accent-emerald-500"
+              />
+            </div>
+          ))}
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleSave}
+              disabled={!allFilled || updateVendor.isPending}
+              className="rounded-lg bg-emerald-500 px-6 py-2 font-medium text-white transition-colors hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {updateVendor.isPending ? 'Menyimpan...' : 'Simpan Penilaian'}
+            </button>
+            {complete && (
+              <button
+                onClick={() => setEditing(false)}
+                className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+              >
+                Batal
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {!editing && !complete && (
+        <div className="py-12 text-center">
+          <TrendingUp className="mx-auto mb-4 h-16 w-16 text-gray-300" />
+          <p className="text-gray-600">Memuat penilaian...</p>
+        </div>
+      )}
     </div>
   )
 }

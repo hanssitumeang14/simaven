@@ -11,6 +11,14 @@ async def _seed_verified_vendor_with_login(
     body = reg.json()
     vendor_id = body["user"]["vendor_id"]
     token = body["access_token"]
+    await client.patch(
+        f"/api/v1/vendors/{vendor_id}",
+        json={
+            "financial_score": {
+                "character": 80, "capacity": 80, "capital": 80, "collateral": 80, "condition": 80,
+            }
+        },
+    )
     await client.post(
         f"/api/v1/vendors/{vendor_id}/verification",
         json={"verification_step": 8, "status": "verified"},

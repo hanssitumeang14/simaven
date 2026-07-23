@@ -64,6 +64,25 @@ export const DOCUMENT_FIELDS: { key: keyof VendorDocuments; label: string; requi
   { key: 'rekening', label: 'Informasi Rekening Bank', required: false },
 ]
 
+export const FIVE_C_FIELDS: { key: keyof FinancialScore; label: string; description: string }[] = [
+  { key: 'character', label: 'Character (Karakter)', description: 'Integritas dan rekam jejak vendor' },
+  { key: 'capacity', label: 'Capacity (Kapasitas)', description: 'Kemampuan memenuhi kewajiban' },
+  { key: 'capital', label: 'Capital (Modal)', description: 'Kekuatan finansial perusahaan' },
+  { key: 'collateral', label: 'Collateral (Jaminan)', description: 'Aset yang dapat dijaminkan' },
+  { key: 'condition', label: 'Condition (Kondisi)', description: 'Kondisi ekonomi dan industri' },
+]
+
+export function has5CComplete(score: FinancialScore | null | undefined): boolean {
+  if (!score) return false
+  return FIVE_C_FIELDS.every(({ key }) => score[key] !== null && score[key] !== undefined)
+}
+
+export function average5C(score: FinancialScore | null | undefined): number | null {
+  if (!has5CComplete(score) || !score) return null
+  const values = FIVE_C_FIELDS.map(({ key }) => score[key] as number)
+  return Math.round(values.reduce((a, b) => a + b, 0) / values.length)
+}
+
 export const VERIFICATION_STEPS = [
   'Upload Dokumen',
   'Verifikasi Logistik',

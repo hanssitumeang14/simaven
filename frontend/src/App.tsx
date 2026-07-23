@@ -6,6 +6,7 @@ import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
 
 import { NotificationBell } from '@/components/layout/NotificationBell'
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
+import { SimavenLogo } from '@/components/layout/SimavenLogo'
 import { Toaster } from '@/components/ui/sonner'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
 import { DashboardPage } from '@/pages/DashboardPage'
@@ -52,8 +53,8 @@ function Sidebar({ nav }: { nav: { to: string; label: string }[] }) {
   return (
     <aside className="flex w-60 shrink-0 flex-col border-r bg-white">
       <div className="px-5 py-6">
-        <p className="font-medium">SIMAVEN</p>
-        <p className="text-xs text-muted-foreground">RSJPD Harapan Kita</p>
+        <SimavenLogo iconSize={30} wordmarkClassName="bg-gradient-to-r from-emerald-500 to-blue-500 bg-clip-text text-lg font-extrabold text-transparent" />
+        <p className="mt-1 text-xs text-muted-foreground">RSJPD Harapan Kita</p>
       </div>
       <nav className="flex-1 space-y-1 px-3">
         {nav.map((item) => (

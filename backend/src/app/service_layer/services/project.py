@@ -13,15 +13,18 @@ from app.adapters.db.models.enums import (
     ProjectStage,
     ProjectStatus,
     ProjectType,
+    SpkStatus,
     UserRole,
     VendorStatus,
 )
 from app.adapters.db.models.notification import VendorNotification
 from app.adapters.db.models.project import Project, ProjectTimelineEvent, ProjectVendor
+from app.adapters.db.models.spk import Spk
 from app.adapters.db.models.user import User
 from app.adapters.db.models.vendor import Vendor
 from app.adapters.db.repositories.project import ProjectRepository
 from app.adapters.db.repositories.vendor import VendorRepository
+from app.adapters.pdf.renderer import PdfRenderer
 from app.lib.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.lib.logging import get_logger
 from app.service_layer.schemas.common import Page, PageParams
@@ -442,6 +445,26 @@ class ProjectService:
             f"Invoice {payload.invoice_number} diterbitkan, pengadaan selesai",
         )
         return project
+
+    async def render_invoice_pdf(self, project_id: uuid.UUID, user: User) -> bytes:
+        """PDF invoice dibuat dari data SPK (rincian & nilai) + nomor/tanggal invoice
+        yang dicatat RS saat menyelesaikan pengadaan."""
+        project = await self.get(project_id)
+        if user.role == UserRole.VENDOR and project.winning_vendor_id != user.vendor_id:
+            raise ForbiddenError("Anda hanya bisa mengunduh invoice milik perusahaan Anda")
+        if not project.invoice_number:
+            raise ConflictError("Invoice belum diterbitkan untuk pengadaan ini")
+
+        stmt = (
+            select(Spk)
+            .where(Spk.project_id == project_id, Spk.status == SpkStatus.ISSUED)
+            .order_by(Spk.created_at.desc())
+        )
+        spk = (await self.session.execute(stmt)).scalars().first()
+        if not spk:
+            raise NotFoundError("SPK untuk pengadaan ini tidak ditemukan")
+
+        return PdfRenderer().render_invoice(project, spk)
 
     async def _get_as_winning_vendor(self, project_id: uuid.UUID, user: User) -> Project:
         project = await self.get(project_id)

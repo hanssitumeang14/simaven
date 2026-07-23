@@ -8,6 +8,7 @@ from app.entrypoints.deps import CurrentUser, Pagination, VendorSvc
 from app.lib.exceptions import ForbiddenError
 from app.service_layer.schemas.common import Page
 from app.service_layer.schemas.vendor import (
+    FinancialScore,
     VendorCreate,
     VendorRead,
     VendorUpdate,
@@ -45,6 +46,13 @@ async def get_my_vendor(user: CurrentUser, service: VendorSvc):
 @router.get("/{vendor_id}", response_model=VendorRead)
 async def get_vendor(vendor_id: uuid.UUID, service: VendorSvc):
     return await service.get(vendor_id)
+
+
+@router.get("/{vendor_id}/5c-suggestion", response_model=FinancialScore)
+async def get_5c_suggestion(vendor_id: uuid.UUID, service: VendorSvc):
+    """Saran awal skor 5C dari data yang sudah ada (dokumen, riwayat proyek, Bank Garansi).
+    RS tetap bisa koreksi sebelum menyimpan penilaian akhir."""
+    return await service.suggest_5c(vendor_id)
 
 
 @router.patch("/{vendor_id}", response_model=VendorRead)

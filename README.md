@@ -1,8 +1,6 @@
 # SIMAVEN
 
-System Management Vendor untuk pengadaan RSAB Harapan Kita. Backend FastAPI, frontend React + TypeScript, dengan generate PDF Surat Perintah Kerja di sisi server.
-
-Struktur backend mengikuti pola `dmx-service-rtaa`: `entrypoints` → `service_layer` → `adapters`, layout `src/`, dependency lewat `uv`, migrasi lewat Alembic.
+System Management Vendor untuk pengadaan RSJPD Harapan Kita. Backend FastAPI, frontend React + TypeScript, dengan generate PDF Surat Perintah Kerja di sisi server.
 
 ```
 simaven/

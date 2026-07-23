@@ -1,6 +1,12 @@
 import { api } from '@/lib/api-client'
 import type { Page } from '@/types/common'
-import type { Vendor, VendorDocuments, VendorListQuery, VendorStatus } from '@/types/vendor'
+import type {
+  FinancialScore,
+  Vendor,
+  VendorDocuments,
+  VendorListQuery,
+  VendorStatus,
+} from '@/types/vendor'
 
 export interface VendorCreateInput {
   npwp: string
@@ -17,7 +23,9 @@ export interface VendorCreateInput {
   bank_account_no?: string
 }
 
-export type VendorUpdateInput = Partial<Omit<VendorCreateInput, 'npwp'>>
+export type VendorUpdateInput = Partial<Omit<VendorCreateInput, 'npwp'>> & {
+  financial_score?: FinancialScore
+}
 
 export interface VerificationInput {
   verification_step: number
@@ -40,4 +48,6 @@ export const vendorApi = {
     formData.append('file', file)
     return api.postForm<Vendor>(`/vendors/${id}/documents/${docKey}/upload`, formData)
   },
+
+  suggest5C: (id: string) => api.get<FinancialScore>(`/vendors/${id}/5c-suggestion`),
 }

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<title>Invoice {{ project.invoice_number }}</title>
+<style>
+  @page {
+    size: A4;
+    margin: 20mm 18mm 22mm 18mm;
+    @bottom-right {
+      content: "Halaman " counter(page) " dari " counter(pages);
+      font-family: "Times New Roman", serif;
+      font-size: 9pt;
+      color: #555;
+    }
+    @bottom-left {
+      content: "Invoice {{ project.invoice_number }}";
+      font-family: "Times New Roman", serif;
+      font-size: 9pt;
+      color: #555;
+    }
+  }
+
+  body {
+    font-family: "Times New Roman", serif;
+    font-size: 11pt;
+    line-height: 1.5;
+    color: #000;
+  }
+
+  .kop {
+    display: flex;
+    align-items: center;
+    gap: 12mm;
+    border-bottom: 3px double #000;
+    padding-bottom: 4mm;
+    margin-bottom: 8mm;
+  }
+  .kop img { height: 22mm; }
+  .kop .org-name { font-size: 16pt; font-weight: bold; letter-spacing: 0.5px; }
+  .kop .org-address { font-size: 9.5pt; color: #333; }
+
+  .judul { text-align: center; margin-bottom: 6mm; }
+  .judul h1 { font-size: 13pt; text-transform: uppercase; margin: 0; text-decoration: underline; }
+  .judul .nomor { font-size: 11pt; margin-top: 1mm; }
+
+  table.meta { width: 100%; border-collapse: collapse; margin-bottom: 6mm; }
+  table.meta td { vertical-align: top; padding: 1mm 0; }
+  table.meta td.label { width: 42mm; }
+  table.meta td.sep { width: 4mm; }
+
+  .pihak { display: flex; gap: 10mm; margin-bottom: 6mm; }
+  .pihak .kolom { flex: 1; }
+  .pihak h3 { font-size: 10pt; text-transform: uppercase; color: #555; margin: 0 0 2mm 0; }
+
+  table.rincian { width: 100%; border-collapse: collapse; margin: 4mm 0; font-size: 10pt; }
+  table.rincian th, table.rincian td { border: 0.6pt solid #000; padding: 2mm; }
+  table.rincian th { background: #eaeaea; text-align: center; font-weight: bold; }
+  table.rincian td.num { text-align: right; }
+  table.rincian td.center { text-align: center; }
+  table.rincian tr { page-break-inside: avoid; }
+  table.rincian thead { display: table-header-group; }
+  table.rincian tfoot td { font-weight: bold; background: #f5f5f5; }
+
+  .terbilang { font-style: italic; margin-bottom: 5mm; }
+
+  .pasal { margin-bottom: 4mm; }
+  .pasal h2 { font-size: 11pt; margin: 0 0 1mm 0; }
+
+  .ttd {
+    margin-top: 12mm;
+    width: 100%;
+    page-break-inside: avoid;
+  }
+  .ttd table { width: 100%; border-collapse: collapse; }
+  .ttd td { width: 50%; text-align: center; vertical-align: top; }
+  .ttd .ruang { height: 26mm; }
+  .ttd .nama { font-weight: bold; text-decoration: underline; }
+
+  .catatan { font-size: 9pt; color: #444; margin-top: 6mm; border-top: 0.5pt solid #999; padding-top: 2mm; }
+</style>
+</head>
+<body>
+
+<div class="kop">
+  {% if org_logo %}<img src="{{ org_logo }}" alt="" />{% endif %}
+  <div>
+    <div class="org-name">{{ org_name }}</div>
+    <div class="org-address">{{ org_address }}</div>
+  </div>
+</div>
+
+<div class="judul">
+  <h1>Invoice / Tagihan Pembayaran</h1>
+  <div class="nomor">Nomor: {{ project.invoice_number }}</div>
+</div>
+
+<table class="meta">
+  <tr>
+    <td class="label">Tanggal Invoice</td><td class="sep">:</td>
+    <td>{{ project.invoice_date | tanggal_id }}</td>
+  </tr>
+  <tr>
+    <td class="label">Referensi SPK</td><td class="sep">:</td>
+    <td>{{ spk.number }}</td>
+  </tr>
+  <tr>
+    <td class="label">Nama Pekerjaan</td><td class="sep">:</td>
+    <td>{{ project.name }}</td>
+  </tr>
+  <tr>
+    <td class="label">Kode Pengadaan</td><td class="sep">:</td>
+    <td>{{ project.code }}</td>
+  </tr>
+</table>
+
+<div class="pihak">
+  <div class="kolom">
+    <h3>Ditagihkan Kepada</h3>
+    <div>{{ org_name }}</div>
+    <div>{{ org_address }}</div>
+  </div>
+  <div class="kolom">
+    <h3>Ditagihkan Oleh</h3>
+    <div>{{ vendor.company_name }}</div>
+    <div>NPWP: {{ vendor.npwp }}</div>
+    <div>{{ vendor.address }}, {{ vendor.city }}</div>
+  </div>
+</div>
+
+<div class="pasal">
+  <h2>Rincian Tagihan</h2>
+  <table class="rincian">
+    <thead>
+      <tr>
+        <th style="width: 10mm;">No</th>
+        <th>Uraian Pekerjaan</th>
+        <th style="width: 18mm;">Satuan</th>
+        <th style="width: 18mm;">Volume</th>
+        <th style="width: 30mm;">Harga Satuan</th>
+        <th style="width: 32mm;">Jumlah</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td class="center">{{ item.line_no }}</td>
+        <td>{{ item.description }}</td>
+        <td class="center">{{ item.unit }}</td>
+        <td class="num">{{ item.quantity }}</td>
+        <td class="num">{{ item.unit_price | rupiah }}</td>
+        <td class="num">{{ item.subtotal | rupiah }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="5" style="text-align: right;">Total Tagihan</td>
+        <td class="num">{{ spk.total_amount | rupiah }}</td>
+      </tr>
+    </tfoot>
+  </table>
+  <p class="terbilang">
+    Terbilang: {{ spk.total_amount | terbilang }} rupiah.
+  </p>
+</div>
+
+<div class="pasal">
+  <h2>Instruksi Pembayaran</h2>
+  <table class="meta">
+    <tr>
+      <td class="label">Bank Penerima</td><td class="sep">:</td>
+      <td>{{ vendor.bank_name }}</td>
+    </tr>
+    <tr>
+      <td class="label">Nomor Rekening</td><td class="sep">:</td>
+      <td>{{ vendor.bank_account_no or '-' }}</td>
+    </tr>
+    <tr>
+      <td class="label">Atas Nama</td><td class="sep">:</td>
+      <td>{{ vendor.company_name }}</td>
+    </tr>
+  </table>
+</div>
+
+<div class="ttd">
+  <table>
+    <tr>
+      <td>
+        <div>Yang Menagih,</div>
+        <div>{{ vendor.company_name }}</div>
+        <div class="ruang"></div>
+        <div class="nama">{{ vendor.director_name }}</div>
+        <div>Direktur</div>
+      </td>
+      <td>
+        <div>{{ org_city }}, {{ project.invoice_date | tanggal_id }}</div>
+        <div>Mengetahui, {{ org_name }}</div>
+        <div class="ruang"></div>
+        <div class="nama">{{ spk.signatory_name }}</div>
+        <div>{{ spk.signatory_position }}</div>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div class="catatan">
+  Dokumen ini diterbitkan melalui sistem SIMAVEN dan sah tanpa memerlukan cap basah
+  apabila telah ditandatangani secara elektronik.
+</div>
+
+</body>
+</html>

@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 
+import { SimavenLogo } from '@/components/layout/SimavenLogo'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -48,7 +49,8 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-gray-50 px-4">
+      <SimavenLogo iconSize={48} withTagline wordmarkClassName="bg-gradient-to-r from-emerald-400 to-blue-500 bg-clip-text text-3xl font-extrabold text-transparent" />
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Masuk ke SIMAVEN</CardTitle>

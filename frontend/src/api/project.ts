@@ -1,4 +1,5 @@
 import { api } from '@/lib/api-client'
+import { authToken } from '@/lib/auth-token'
 import type { Page } from '@/types/common'
 import type {
   Project,
@@ -98,4 +99,25 @@ export const projectApi = {
   /** URL dokumen yang diunggah (mis. Bank Garansi), disajikan lewat static file server. */
   documentUrl: (path: string) =>
     `${import.meta.env.VITE_API_BASE_URL ?? ''}/uploads/${path}`,
+
+  /** window.open() tidak bisa menyertakan header Authorization, jadi token disisipkan
+   * lewat query string — endpoint di backend menerima token lewat cara ini juga. */
+  invoicePdfUrl: (projectId: string) => {
+    const base = `${import.meta.env.VITE_API_BASE_URL ?? ''}/api/v1/projects/${projectId}/invoice/pdf`
+    const token = authToken.get()
+    return token ? `${base}?token=${encodeURIComponent(token)}` : base
+  },
+
+  /** Unduh PDF invoice sebagai file. */
+  async downloadInvoicePdf(projectId: string, invoiceNumber: string): Promise<void> {
+    const blob = await api.blob(`/projects/${projectId}/invoice/pdf`, { download: true })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `Invoice-${invoiceNumber.replaceAll('/', '-')}.pdf`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+  },
 }

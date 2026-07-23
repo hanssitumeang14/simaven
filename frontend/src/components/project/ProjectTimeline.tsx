@@ -310,8 +310,18 @@ function StageActionPanel({
 
   return (
     <Panel title="Pengadaan selesai">
-      Invoice {project.invoice_number} ({formatTanggal(project.invoice_date)}). Selesai pada{' '}
-      {formatDateTime(project.finished_at)}.
+      <p className="mb-2">
+        Invoice {project.invoice_number} ({formatTanggal(project.invoice_date)}). Selesai pada{' '}
+        {formatDateTime(project.finished_at)}.
+      </p>
+      <a
+        href={projectApi.invoicePdfUrl(project.id)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1 text-sm font-medium text-blue-700 hover:underline"
+      >
+        Lihat PDF Invoice <ExternalLink className="h-3.5 w-3.5" />
+      </a>
     </Panel>
   )
 }

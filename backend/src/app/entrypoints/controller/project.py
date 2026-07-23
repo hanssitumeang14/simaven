@@ -2,11 +2,11 @@ import uuid
 from datetime import date
 from decimal import Decimal
 
-from fastapi import APIRouter, File, Form, Query, UploadFile, status
+from fastapi import APIRouter, File, Form, Query, Response, UploadFile, status
 
 from app.adapters.db.models.enums import ProjectStatus, ProjectType, UserRole
 from app.adapters.storage.local import save_upload
-from app.entrypoints.deps import CurrentUser, Pagination, ProjectSvc
+from app.entrypoints.deps import CurrentUser, CurrentUserFlexible, Pagination, ProjectSvc
 from app.lib.exceptions import ForbiddenError
 from app.service_layer.schemas.common import Page
 from app.service_layer.schemas.notification import VendorNotificationRead
@@ -191,3 +191,25 @@ async def confirm_goods_complete(project_id: uuid.UUID, service: ProjectSvc):
 async def finish_project(project_id: uuid.UUID, payload: FinishProjectInput, service: ProjectSvc):
     """RS menerbitkan invoice dan menutup pengadaan."""
     return await service.finish_project(project_id, payload)
+
+
+@router.get(
+    "/{project_id}/invoice/pdf",
+    response_class=Response,
+    responses={200: {"content": {"application/pdf": {}}}},
+)
+async def download_invoice_pdf(
+    project_id: uuid.UUID,
+    service: ProjectSvc,
+    user: CurrentUserFlexible,
+    download: bool = Query(False, description="true = attachment, false = tampil di browser"),
+):
+    project = await service.get(project_id)
+    pdf_bytes = await service.render_invoice_pdf(project_id, user)
+    disposition = "attachment" if download else "inline"
+    filename = f"Invoice-{(project.invoice_number or project.code).replace('/', '-')}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'{disposition}; filename="{filename}"'},
+    )

@@ -76,6 +76,15 @@ export function useUploadVendorDocument(id: string) {
   })
 }
 
+export function useSuggested5C(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['vendors', 'detail', id, '5c-suggestion'] as const,
+    queryFn: () => vendorApi.suggest5C(id),
+    enabled,
+    staleTime: 0,
+  })
+}
+
 export function useUpdateVerification(id: string) {
   const qc = useQueryClient()
   return useMutation({
