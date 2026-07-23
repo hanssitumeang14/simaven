@@ -101,9 +101,6 @@ class Project(Base, UUIDMixin, TimestampMixin):
     # Kosong kalau dicatat manual oleh RS (mis. lewat Kopra Bank Garansi Mandiri).
     bg_document_path: Mapped[str | None] = mapped_column(String(255))
 
-    sppb_number: Mapped[str | None] = mapped_column(String(50))
-    sppb_date: Mapped[date | None] = mapped_column(Date)
-
     work_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Vendor lapor duluan, RS yang konfirmasi jadi resmi "Barang Lengkap".
     goods_reported_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -128,3 +125,5 @@ class Project(Base, UUIDMixin, TimestampMixin):
     )
     winning_vendor = relationship("Vendor", foreign_keys=[winning_vendor_id], lazy="noload")
     spks = relationship("Spk", back_populates="project", lazy="noload")
+    sppbs = relationship("Sppb", back_populates="project", lazy="noload")
+    sppbs = relationship("Sppb", back_populates="project", lazy="noload")

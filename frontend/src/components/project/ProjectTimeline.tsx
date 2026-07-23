@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Check, Clock, ExternalLink } from 'lucide-react'
+import { Check, Clock, ExternalLink, Plus, Trash2 } from 'lucide-react'
 
 import { projectApi } from '@/api/project'
+import { sppbApi } from '@/api/sppb'
 import { Button } from '@/components/ui/button'
 import { CurrencyInput } from '@/components/ui/currency-input'
 import { Input } from '@/components/ui/input'
@@ -9,7 +10,6 @@ import { Label } from '@/components/ui/label'
 import {
   useConfirmGoodsComplete,
   useFinishProject,
-  useIssueSppb,
   usePurchaseBankGaransiKopra,
   useProjectTimeline,
   useRecordBankGaransi,
@@ -18,8 +18,10 @@ import {
   useUploadBankGaransi,
 } from '@/hooks/useProjects'
 import { useIssuedSpkForProject, useUploadSignedSpk } from '@/hooks/useSpk'
+import { useCreateSppb, useIssuedSppbForProject, useUpdateSppbProgress } from '@/hooks/useSppb'
 import { formatRupiah, formatTanggal } from '@/lib/format'
 import { PROJECT_STAGE, type Project, type ProjectStage } from '@/types/project'
+import type { SppbItem } from '@/types/sppb'
 
 type ViewerRole = 'rs' | 'vendor' | 'bank_mandiri'
 
@@ -113,16 +115,11 @@ function StageActionPanel({
   viewerRole: ViewerRole
 }) {
   const recordBg = useRecordBankGaransi(project.id)
-  const issueSppb = useIssueSppb(project.id)
-  const reportWorkStarted = useReportWorkStarted(project.id)
-  const reportGoodsComplete = useReportGoodsComplete(project.id)
   const confirmGoods = useConfirmGoodsComplete(project.id)
   const finishProject = useFinishProject(project.id)
 
   const [bgAmount, setBgAmount] = useState('')
   const [bgValidUntil, setBgValidUntil] = useState('')
-  const [sppbNumber, setSppbNumber] = useState('')
-  const [sppbDate, setSppbDate] = useState('')
   const [invoiceNumber, setInvoiceNumber] = useState('')
   const [invoiceDate, setInvoiceDate] = useState('')
 
@@ -191,95 +188,32 @@ function StageActionPanel({
 
     return (
       <div className="space-y-3">
-        <Panel title="Bank Garansi tercatat — terbitkan SPPB">
-          <p className="mb-3 text-sm text-gray-600">
+        <Panel title="Bank Garansi tercatat">
+          <p className="text-sm text-gray-600">
             Nominal {formatRupiah(project.bg_amount)}, berlaku sampai{' '}
             {formatTanggal(project.bg_valid_until)}
           </p>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label htmlFor="sppb_number">Nomor SPPB</Label>
-              <Input
-                id="sppb_number"
-                value={sppbNumber}
-                onChange={(e) => setSppbNumber(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="sppb_date">Tanggal SPPB</Label>
-              <Input
-                id="sppb_date"
-                type="date"
-                value={sppbDate}
-                onChange={(e) => setSppbDate(e.target.value)}
-              />
-            </div>
-          </div>
-          <Button
-            className="mt-3"
-            size="sm"
-            disabled={!sppbNumber || !sppbDate || issueSppb.isPending}
-            onClick={() => issueSppb.mutate({ number: sppbNumber, date: sppbDate })}
-          >
-            Terbitkan SPPB
-          </Button>
         </Panel>
+        {isRs ? (
+          <RsIssueSppbPanel project={project} />
+        ) : (
+          <Panel>Menunggu RS menerbitkan SPPB.</Panel>
+        )}
         <SpkSignedDocumentSection project={project} viewerRole={viewerRole} />
       </div>
     )
   }
 
   if (stage === 'Surat Pesanan Pembelian Barang (SPPB)') {
-    if (isVendor) {
-      return (
-        <Panel title="SPPB telah diterbitkan">
-          <p className="mb-3 text-sm text-gray-600">
-            SPPB {project.sppb_number} ({formatTanggal(project.sppb_date)}). Silakan mulai
-            pengerjaan.
-          </p>
-          <Button
-            size="sm"
-            disabled={reportWorkStarted.isPending}
-            onClick={() => reportWorkStarted.mutate()}
-          >
-            Mulai Pengerjaan
-          </Button>
-        </Panel>
-      )
-    }
-    return (
-      <Panel>
-        SPPB {project.sppb_number} telah diterbitkan ({formatTanggal(project.sppb_date)}).
-        Menunggu vendor memulai pengerjaan.
-      </Panel>
-    )
+    return <SppbIssuedPanel project={project} viewerRole={viewerRole} />
   }
 
   if (stage === 'Pengerjaan Vendor') {
     if (!project.goods_reported_at) {
       if (isVendor) {
-        return (
-          <Panel title="Sedang mengerjakan">
-            <p className="mb-3 text-sm text-gray-600">
-              Dimulai {formatDateTime(project.work_started_at)}. Laporkan kalau pekerjaan sudah
-              selesai.
-            </p>
-            <Button
-              size="sm"
-              disabled={reportGoodsComplete.isPending}
-              onClick={() => reportGoodsComplete.mutate()}
-            >
-              Lapor Selesai
-            </Button>
-          </Panel>
-        )
+        return <VendorSppbProgressPanel project={project} />
       }
-      return (
-        <Panel>
-          Vendor sedang mengerjakan (dimulai {formatDateTime(project.work_started_at)}). Menunggu
-          laporan penyelesaian dari vendor.
-        </Panel>
-      )
+      return <RsSppbProgressPanel project={project} readOnlyNote="Menunggu laporan penyelesaian dari vendor." />
     }
     if (!isRs) {
       return (
@@ -290,15 +224,17 @@ function StageActionPanel({
       )
     }
     return (
-      <Panel title="Vendor melaporkan pekerjaan selesai">
-        <p className="mb-3 text-sm text-gray-600">
-          Dilaporkan pada {formatDateTime(project.goods_reported_at)}. Periksa barang/pekerjaan
-          sebelum konfirmasi.
-        </p>
-        <Button size="sm" disabled={confirmGoods.isPending} onClick={() => confirmGoods.mutate()}>
-          Konfirmasi Barang Lengkap
-        </Button>
-      </Panel>
+      <div className="space-y-3">
+        <RsSppbProgressPanel
+          project={project}
+          readOnlyNote={`Dilaporkan pada ${formatDateTime(project.goods_reported_at)}. Periksa barang/pekerjaan sebelum konfirmasi.`}
+        />
+        <Panel>
+          <Button size="sm" disabled={confirmGoods.isPending} onClick={() => confirmGoods.mutate()}>
+            Konfirmasi Barang Lengkap
+          </Button>
+        </Panel>
+      </div>
     )
   }
 
@@ -346,6 +282,256 @@ function StageActionPanel({
       Invoice {project.invoice_number} ({formatTanggal(project.invoice_date)}). Selesai pada{' '}
       {formatDateTime(project.finished_at)}.
     </Panel>
+  )
+}
+
+type SppbItemDraft = { description: string; unit: string; quantity_ordered: string }
+
+const EMPTY_SPPB_ITEM: SppbItemDraft = { description: '', unit: '', quantity_ordered: '' }
+
+function RsIssueSppbPanel({ project }: { project: Project }) {
+  const createSppb = useCreateSppb()
+  const [issuedDate, setIssuedDate] = useState('')
+  const [notes, setNotes] = useState('')
+  const [items, setItems] = useState<SppbItemDraft[]>([{ ...EMPTY_SPPB_ITEM }])
+
+  function updateItem(index: number, patch: Partial<SppbItemDraft>) {
+    setItems((prev) => prev.map((item, i) => (i === index ? { ...item, ...patch } : item)))
+  }
+
+  const canSubmit =
+    Boolean(issuedDate) &&
+    items.length > 0 &&
+    items.every((item) => item.description && item.unit && item.quantity_ordered)
+
+  return (
+    <Panel title="Terbitkan SPPB">
+      <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label htmlFor="sppb_issued_date">Tanggal SPPB</Label>
+            <Input
+              id="sppb_issued_date"
+              type="date"
+              value={issuedDate}
+              onChange={(e) => setIssuedDate(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="sppb_notes">Catatan (opsional)</Label>
+            <Input id="sppb_notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Barang yang Dipesan</Label>
+          {items.map((item, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <Input
+                placeholder="Nama barang"
+                className="flex-1"
+                value={item.description}
+                onChange={(e) => updateItem(index, { description: e.target.value })}
+              />
+              <Input
+                placeholder="Satuan"
+                className="w-24"
+                value={item.unit}
+                onChange={(e) => updateItem(index, { unit: e.target.value })}
+              />
+              <Input
+                type="number"
+                min="0"
+                placeholder="Jumlah"
+                className="w-24"
+                value={item.quantity_ordered}
+                onChange={(e) => updateItem(index, { quantity_ordered: e.target.value })}
+              />
+              <button
+                type="button"
+                className="rounded-md p-2 text-muted-foreground hover:bg-gray-100 hover:text-destructive disabled:opacity-30"
+                disabled={items.length === 1}
+                onClick={() => setItems((prev) => prev.filter((_, i) => i !== index))}
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => setItems((prev) => [...prev, { ...EMPTY_SPPB_ITEM }])}
+          >
+            <Plus className="mr-1 h-4 w-4" /> Tambah Barang
+          </Button>
+        </div>
+
+        <Button
+          size="sm"
+          disabled={!canSubmit || createSppb.isPending}
+          onClick={() =>
+            createSppb.mutate({
+              project_id: project.id,
+              issued_date: issuedDate,
+              notes: notes || undefined,
+              items,
+            })
+          }
+        >
+          {createSppb.isPending ? 'Menerbitkan...' : 'Terbitkan SPPB'}
+        </Button>
+      </div>
+    </Panel>
+  )
+}
+
+function SppbIssuedPanel({ project, viewerRole }: { project: Project; viewerRole: ViewerRole }) {
+  const { data: sppb } = useIssuedSppbForProject(project.id)
+  const reportWorkStarted = useReportWorkStarted(project.id)
+  const isVendor = viewerRole === 'vendor'
+
+  if (!sppb) return <Panel>Memuat data SPPB...</Panel>
+
+  return (
+    <Panel title={`SPPB ${sppb.number}`}>
+      <p className="mb-2 text-sm text-gray-600">
+        Diterbitkan {formatTanggal(sppb.issued_date)}
+        {sppb.notes && ` — ${sppb.notes}`}
+      </p>
+      <SppbItemsTable items={sppb.items} />
+      <div className="mt-3 flex items-center gap-3">
+        <a
+          href={sppbApi.pdfUrl(sppb.id)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-sm font-medium text-blue-700 hover:underline"
+        >
+          Lihat PDF SPPB <ExternalLink className="h-3.5 w-3.5" />
+        </a>
+        {isVendor && (
+          <Button
+            size="sm"
+            disabled={reportWorkStarted.isPending}
+            onClick={() => reportWorkStarted.mutate()}
+          >
+            Mulai Pengerjaan
+          </Button>
+        )}
+      </div>
+      {!isVendor && (
+        <p className="mt-2 text-sm text-gray-600">Menunggu vendor memulai pengerjaan.</p>
+      )}
+    </Panel>
+  )
+}
+
+function VendorSppbProgressPanel({ project }: { project: Project }) {
+  const { data: sppb } = useIssuedSppbForProject(project.id)
+  const updateProgress = useUpdateSppbProgress(sppb?.id ?? '')
+  const reportGoodsComplete = useReportGoodsComplete(project.id)
+  const [values, setValues] = useState<Record<string, string>>({})
+
+  if (!sppb) return <Panel>Memuat data SPPB...</Panel>
+
+  return (
+    <Panel title="Sedang mengerjakan">
+      <p className="mb-3 text-sm text-gray-600">
+        Dimulai {formatDateTime(project.work_started_at)}. Perbarui jumlah barang yang sudah
+        dikirim, lalu laporkan kalau pekerjaan sudah selesai.
+      </p>
+      <SppbItemsTable
+        items={sppb.items}
+        editable
+        values={values}
+        onChange={(itemId, value) => setValues((prev) => ({ ...prev, [itemId]: value }))}
+      />
+      <div className="mt-3 flex items-center gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={updateProgress.isPending || Object.keys(values).length === 0}
+          onClick={() =>
+            updateProgress.mutate({
+              items: sppb.items.map((item) => ({
+                id: item.id,
+                quantity_delivered: values[item.id] ?? item.quantity_delivered,
+              })),
+            })
+          }
+        >
+          {updateProgress.isPending ? 'Menyimpan...' : 'Simpan Progres'}
+        </Button>
+        <Button
+          size="sm"
+          disabled={reportGoodsComplete.isPending}
+          onClick={() => reportGoodsComplete.mutate()}
+        >
+          Lapor Selesai
+        </Button>
+      </div>
+    </Panel>
+  )
+}
+
+function RsSppbProgressPanel({ project, readOnlyNote }: { project: Project; readOnlyNote: string }) {
+  const { data: sppb } = useIssuedSppbForProject(project.id)
+
+  if (!sppb) return <Panel>Memuat data SPPB...</Panel>
+
+  return (
+    <Panel title={`Progres SPPB ${sppb.number}`}>
+      <SppbItemsTable items={sppb.items} />
+      <p className="mt-3 text-sm text-gray-600">{readOnlyNote}</p>
+    </Panel>
+  )
+}
+
+function SppbItemsTable({
+  items,
+  editable,
+  values,
+  onChange,
+}: {
+  items: SppbItem[]
+  editable?: boolean
+  values?: Record<string, string>
+  onChange?: (itemId: string, value: string) => void
+}) {
+  return (
+    <table className="w-full text-sm">
+      <thead>
+        <tr className="text-left text-xs text-gray-500">
+          <th className="pb-1 font-medium">Barang</th>
+          <th className="pb-1 text-right font-medium">Dipesan</th>
+          <th className="pb-1 text-right font-medium">Dikirim</th>
+        </tr>
+      </thead>
+      <tbody>
+        {items.map((item) => (
+          <tr key={item.id} className="border-t border-blue-100">
+            <td className="py-1.5 pr-2 text-gray-900">
+              {item.description} <span className="text-gray-400">({item.unit})</span>
+            </td>
+            <td className="py-1.5 text-right text-gray-900">{item.quantity_ordered}</td>
+            <td className="py-1.5 text-right text-gray-900">
+              {editable ? (
+                <Input
+                  type="number"
+                  min="0"
+                  max={item.quantity_ordered}
+                  className="ml-auto w-24 text-right"
+                  value={values?.[item.id] ?? item.quantity_delivered}
+                  onChange={(e) => onChange?.(item.id, e.target.value)}
+                />
+              ) : (
+                item.quantity_delivered
+              )}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   )
 }
 

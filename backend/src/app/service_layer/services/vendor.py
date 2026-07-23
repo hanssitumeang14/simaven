@@ -1,12 +1,16 @@
 import uuid
+from typing import Literal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.adapters.db.models.enums import BankGroup, VendorStatus
+from app.adapters.db.models.enums import BankGroup, UserRole, VendorStatus
+from app.adapters.db.models.user import User
 from app.adapters.db.models.vendor import Vendor
 from app.adapters.db.repositories.vendor import VendorRepository
-from app.lib.exceptions import ConflictError, NotFoundError
+from app.lib.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.lib.logging import get_logger
+
+DocumentKey = Literal["sptTahunan", "neraca", "anggaranDasar", "izinPerusahaan", "rekening"]
 from app.service_layer.schemas.common import Page, PageParams
 from app.service_layer.schemas.vendor import (
     VendorCreate,
@@ -84,6 +88,18 @@ class VendorService:
             step=vendor.verification_step,
             status=vendor.status,
         )
+        return vendor
+
+    async def upload_document(
+        self, vendor_id: uuid.UUID, user: User, doc_key: DocumentKey, document_path: str
+    ) -> Vendor:
+        """Vendor mengunggah salah satu dokumen administrasi miliknya sendiri."""
+        vendor = await self.get(vendor_id)
+        if user.role != UserRole.VENDOR or user.vendor_id != vendor_id:
+            raise ForbiddenError("Hanya pemilik akun vendor ini yang bisa mengunggah dokumen")
+        documents = {**(vendor.documents or {}), doc_key: document_path}
+        vendor = await self.repo.update(vendor, documents=documents)
+        _LOGGER.info("vendor_document_uploaded", vendor_id=str(vendor.id), doc_key=doc_key)
         return vendor
 
     async def delete(self, vendor_id: uuid.UUID) -> None:

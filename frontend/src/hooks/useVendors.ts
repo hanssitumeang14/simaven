@@ -9,7 +9,7 @@ import {
 } from '@/api/vendor'
 import { ApiRequestError } from '@/lib/api-client'
 import { queryKeys } from '@/lib/query-client'
-import type { VendorListQuery } from '@/types/vendor'
+import type { VendorDocuments, VendorListQuery } from '@/types/vendor'
 
 function reportError(error: unknown) {
   const message =
@@ -58,6 +58,19 @@ export function useUpdateVendor(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.vendors.all })
       toast.success('Perubahan disimpan')
+    },
+    onError: reportError,
+  })
+}
+
+export function useUploadVendorDocument(id: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ docKey, file }: { docKey: keyof VendorDocuments; file: File }) =>
+      vendorApi.uploadDocument(id, docKey, file),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.vendors.all })
+      toast.success('Dokumen berhasil diunggah')
     },
     onError: reportError,
   })

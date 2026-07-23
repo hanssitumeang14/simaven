@@ -22,7 +22,6 @@ from app.service_layer.schemas.project import (
     ProjectRead,
     ProjectTimelineEventRead,
     ProjectUpdate,
-    SppbInput,
 )
 
 router = APIRouter(prefix="/projects", tags=["projects"])
@@ -168,12 +167,6 @@ async def purchase_bank_garansi_kopra(
     return await service.purchase_bank_garansi_kopra(
         project_id, user, payload.amount, payload.valid_until
     )
-
-
-@router.post("/{project_id}/sppb", response_model=ProjectRead)
-async def issue_sppb(project_id: uuid.UUID, payload: SppbInput, service: ProjectSvc):
-    """Terbitkan Surat Pesanan Pembelian Barang (SPPB)."""
-    return await service.issue_sppb(project_id, payload)
 
 
 @router.post("/{project_id}/work/start", response_model=ProjectRead)

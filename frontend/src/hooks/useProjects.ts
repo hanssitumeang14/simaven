@@ -9,7 +9,6 @@ import {
   type ParticipantSelfCreateInput,
   type ParticipantUpdateInput,
   type ProjectCreateInput,
-  type SppbInput,
 } from '@/api/project'
 import { ApiRequestError } from '@/lib/api-client'
 import { queryKeys } from '@/lib/query-client'
@@ -157,13 +156,6 @@ export function useRecordBankGaransi(projectId: string) {
   return useTimelineMutation<BankGaransiInput>(
     (input) => projectApi.recordBankGaransi(projectId, input),
     'Bank Garansi dicatat',
-  )
-}
-
-export function useIssueSppb(projectId: string) {
-  return useTimelineMutation<SppbInput>(
-    (input) => projectApi.issueSppb(projectId, input),
-    'SPPB diterbitkan',
   )
 }
 

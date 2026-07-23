@@ -49,3 +49,4 @@ class Vendor(Base, UUIDMixin, TimestampMixin):
     performance_rating: Mapped[float | None] = mapped_column(Numeric(3, 2))
 
     spks = relationship("Spk", back_populates="vendor", lazy="noload")
+    sppbs = relationship("Sppb", back_populates="vendor", lazy="noload")

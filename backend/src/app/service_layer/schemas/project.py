@@ -59,8 +59,6 @@ class ProjectRead(ProjectBase):
     bg_valid_until: date | None = None
     bg_submitted_at: datetime | None = None
     bg_document_path: str | None = None
-    sppb_number: str | None = None
-    sppb_date: date | None = None
     work_started_at: datetime | None = None
     goods_reported_at: datetime | None = None
     goods_confirmed_at: datetime | None = None
@@ -74,11 +72,6 @@ class ProjectRead(ProjectBase):
 class BankGaransiInput(BaseModel):
     amount: Decimal = Field(..., gt=0)
     valid_until: date
-
-
-class SppbInput(BaseModel):
-    number: str = Field(..., min_length=1, max_length=50)
-    date: date
 
 
 class FinishProjectInput(BaseModel):

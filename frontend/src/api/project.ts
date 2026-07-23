@@ -39,11 +39,6 @@ export interface BankGaransiInput {
   valid_until: string
 }
 
-export interface SppbInput {
-  number: string
-  date: string
-}
-
 export interface FinishProjectInput {
   invoice_number: string
   invoice_date: string
@@ -74,8 +69,6 @@ export const projectApi = {
     api.get<ProjectTimelineEvent[]>(`/projects/${projectId}/timeline`),
   recordBankGaransi: (projectId: string, input: BankGaransiInput) =>
     api.post<Project>(`/projects/${projectId}/bank-garansi`, input),
-  issueSppb: (projectId: string, input: SppbInput) =>
-    api.post<Project>(`/projects/${projectId}/sppb`, input),
   reportWorkStarted: (projectId: string) =>
     api.post<Project>(`/projects/${projectId}/work/start`),
   reportGoodsComplete: (projectId: string) =>

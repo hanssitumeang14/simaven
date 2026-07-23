@@ -13,8 +13,10 @@ import { ProjectListPage } from '@/pages/ProjectListPage'
 import { RegisterPage } from '@/pages/RegisterPage'
 import { RegisterVendorPage } from '@/pages/RegisterVendorPage'
 import { SpkListPage } from '@/pages/SpkListPage'
+import { SppbListPage } from '@/pages/SppbListPage'
 import { VendorHomePage } from '@/pages/vendor-portal/VendorHomePage'
 import { VendorSpkPage } from '@/pages/vendor-portal/VendorSpkPage'
+import { VendorSppbPage } from '@/pages/vendor-portal/VendorSppbPage'
 import { VendorTendersPage } from '@/pages/vendor-portal/VendorTendersPage'
 import { VendorWorkPage } from '@/pages/vendor-portal/VendorWorkPage'
 import { VendorListPage } from '@/pages/VendorListPage'
@@ -27,6 +29,7 @@ const RS_NAV = [
   { to: '/vendors', label: 'Rekanan Bank' },
   { to: '/projects', label: 'Pengadaan' },
   { to: '/spk', label: 'SPK' },
+  { to: '/sppb', label: 'SPPB' },
 ]
 
 const VENDOR_NAV = [
@@ -34,6 +37,7 @@ const VENDOR_NAV = [
   { to: '/vendor/tender', label: 'Tender Tersedia' },
   { to: '/vendor/pekerjaan', label: 'Pekerjaan Saya' },
   { to: '/vendor/spk', label: 'SPK Saya' },
+  { to: '/vendor/sppb', label: 'SPPB Saya' },
 ]
 
 const BANK_NAV = [
@@ -99,6 +103,7 @@ function RsShell() {
         <Route path="/vendors" element={<VendorListPage />} />
         <Route path="/projects" element={<ProjectListPage />} />
         <Route path="/spk" element={<SpkListPage />} />
+        <Route path="/sppb" element={<SppbListPage />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Shell>
@@ -114,6 +119,7 @@ function VendorShell() {
         <Route path="/vendor/tender" element={<VendorTendersPage />} />
         <Route path="/vendor/pekerjaan" element={<VendorWorkPage />} />
         <Route path="/vendor/spk" element={<VendorSpkPage />} />
+        <Route path="/vendor/sppb" element={<VendorSppbPage />} />
         <Route path="*" element={<Navigate to="/vendor/profil" replace />} />
       </Routes>
     </Shell>

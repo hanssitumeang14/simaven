@@ -34,4 +34,9 @@ export const queryKeys = {
     list: (query: unknown) => ['spk', 'list', query] as const,
     detail: (id: string) => ['spk', 'detail', id] as const,
   },
+  sppb: {
+    all: ['sppb'] as const,
+    list: (query: unknown) => ['sppb', 'list', query] as const,
+    detail: (id: string) => ['sppb', 'detail', id] as const,
+  },
 }

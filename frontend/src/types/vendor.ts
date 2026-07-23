@@ -56,6 +56,14 @@ export interface VendorListQuery {
   bank?: BankGroup
 }
 
+export const DOCUMENT_FIELDS: { key: keyof VendorDocuments; label: string; required: boolean }[] = [
+  { key: 'sptTahunan', label: 'SPT Tahunan', required: true },
+  { key: 'neraca', label: 'Neraca Keuangan', required: true },
+  { key: 'anggaranDasar', label: 'Anggaran Dasar / Akta Pendirian', required: true },
+  { key: 'izinPerusahaan', label: 'Izin Perusahaan (SIUP/NIB)', required: true },
+  { key: 'rekening', label: 'Informasi Rekening Bank', required: false },
+]
+
 export const VERIFICATION_STEPS = [
   'Upload Dokumen',
   'Verifikasi Logistik',

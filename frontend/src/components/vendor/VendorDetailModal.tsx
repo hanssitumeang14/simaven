@@ -10,8 +10,9 @@ import {
   X,
 } from 'lucide-react'
 
+import { projectApi } from '@/api/project'
 import { useUpdateVerification } from '@/hooks/useVendors'
-import { VERIFICATION_STEPS, type Vendor, type VendorDocuments } from '@/types/vendor'
+import { DOCUMENT_FIELDS, VERIFICATION_STEPS, type Vendor } from '@/types/vendor'
 
 interface VendorDetailModalProps {
   vendor: Vendor
@@ -25,14 +26,6 @@ const verificationSteps = VERIFICATION_STEPS.map((label, index) => ({
   label,
   icon: STEP_ICONS[index] ?? Shield,
 }))
-
-const documentFields: { key: keyof VendorDocuments; label: string; required: boolean }[] = [
-  { key: 'sptTahunan', label: 'SPT Tahunan', required: true },
-  { key: 'neraca', label: 'Neraca Keuangan', required: true },
-  { key: 'anggaranDasar', label: 'Anggaran Dasar / Akta Pendirian', required: true },
-  { key: 'izinPerusahaan', label: 'Izin Perusahaan (SIUP/NIB)', required: true },
-  { key: 'rekening', label: 'Informasi Rekening Bank', required: false },
-]
 
 const bankMandiriProducts = [
   {
@@ -219,7 +212,7 @@ export function VendorDetailModal({ vendor, onClose }: VendorDetailModalProps) {
                 </p>
               </div>
 
-              {documentFields.map((doc) => {
+              {DOCUMENT_FIELDS.map((doc) => {
                 const filename = vendor.documents[doc.key]
                 return (
                   <div
@@ -241,11 +234,18 @@ export function VendorDetailModal({ vendor, onClose }: VendorDetailModalProps) {
                         {doc.required && <div className="text-xs text-red-600">* Wajib</div>}
                       </div>
                     </div>
-                    <span
-                      className={filename ? 'text-sm font-medium text-emerald-600' : 'text-sm text-gray-500'}
-                    >
-                      {filename ? `✓ ${filename}` : 'Belum diunggah'}
-                    </span>
+                    {filename ? (
+                      <a
+                        href={projectApi.documentUrl(filename)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-medium text-emerald-600 hover:underline"
+                      >
+                        ✓ Lihat dokumen
+                      </a>
+                    ) : (
+                      <span className="text-sm text-gray-500">Belum diunggah</span>
+                    )}
                   </div>
                 )
               })}

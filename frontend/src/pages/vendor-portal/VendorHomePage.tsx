@@ -1,6 +1,9 @@
+import { useState } from 'react'
+import { FileText } from 'lucide-react'
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useMyVendor } from '@/hooks/useVendors'
-import { VERIFICATION_STEPS } from '@/types/vendor'
+import { useMyVendor, useUploadVendorDocument } from '@/hooks/useVendors'
+import { DOCUMENT_FIELDS, VERIFICATION_STEPS, type VendorDocuments } from '@/types/vendor'
 
 const STATUS_LABEL: Record<string, string> = {
   pending: 'Menunggu',
@@ -68,6 +71,72 @@ export function VendorHomePage() {
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Dokumen Administrasi</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Lengkapi dokumen berikut agar RS dapat memproses verifikasi perusahaan Anda.
+          </p>
+          {DOCUMENT_FIELDS.map((doc) => (
+            <DocumentRow key={doc.key} vendorId={vendor.id} doc={doc} filename={vendor.documents[doc.key]} />
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function DocumentRow({
+  vendorId,
+  doc,
+  filename,
+}: {
+  vendorId: string
+  doc: { key: keyof VendorDocuments; label: string; required: boolean }
+  filename?: string | null
+}) {
+  const uploadDoc = useUploadVendorDocument(vendorId)
+  const [inputKey, setInputKey] = useState(0)
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    uploadDoc.mutate(
+      { docKey: doc.key, file },
+      { onSuccess: () => setInputKey((k) => k + 1) },
+    )
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 p-3">
+      <div className="flex items-center gap-3">
+        <div
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+            filename ? 'bg-emerald-100' : 'bg-gray-100'
+          }`}
+        >
+          <FileText className={`h-4 w-4 ${filename ? 'text-emerald-600' : 'text-gray-400'}`} />
+        </div>
+        <div>
+          <div className="text-sm font-medium text-gray-900">{doc.label}</div>
+          {doc.required && <div className="text-xs text-red-600">* Wajib</div>}
+          {filename && <div className="text-xs text-emerald-600">Terunggah</div>}
+        </div>
+      </div>
+      <label className="cursor-pointer rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
+        {uploadDoc.isPending ? 'Mengunggah...' : filename ? 'Ganti file' : 'Unggah'}
+        <input
+          key={inputKey}
+          type="file"
+          accept=".pdf,.jpg,.jpeg,.png"
+          className="hidden"
+          disabled={uploadDoc.isPending}
+          onChange={handleChange}
+        />
+      </label>
     </div>
   )
 }

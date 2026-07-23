@@ -1,8 +1,9 @@
 import uuid
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, File, Query, UploadFile, status
 
 from app.adapters.db.models.enums import BankGroup, UserRole, VendorStatus
+from app.adapters.storage.local import save_upload
 from app.entrypoints.deps import CurrentUser, Pagination, VendorSvc
 from app.lib.exceptions import ForbiddenError
 from app.service_layer.schemas.common import Page
@@ -12,6 +13,7 @@ from app.service_layer.schemas.vendor import (
     VendorUpdate,
     VendorVerificationUpdate,
 )
+from app.service_layer.services.vendor import DocumentKey
 
 router = APIRouter(prefix="/vendors", tags=["vendors"])
 
@@ -48,6 +50,19 @@ async def get_vendor(vendor_id: uuid.UUID, service: VendorSvc):
 @router.patch("/{vendor_id}", response_model=VendorRead)
 async def update_vendor(vendor_id: uuid.UUID, payload: VendorUpdate, service: VendorSvc):
     return await service.update(vendor_id, payload)
+
+
+@router.post("/{vendor_id}/documents/{doc_key}/upload", response_model=VendorRead)
+async def upload_document(
+    vendor_id: uuid.UUID,
+    doc_key: DocumentKey,
+    user: CurrentUser,
+    service: VendorSvc,
+    file: UploadFile = File(...),
+):
+    """Vendor mengunggah salah satu dokumen administrasi miliknya sendiri."""
+    document_path = await save_upload(file, subdir=f"vendor-documents/{vendor_id}")
+    return await service.upload_document(vendor_id, user, doc_key, document_path)
 
 
 @router.post("/{vendor_id}/verification", response_model=VendorRead)

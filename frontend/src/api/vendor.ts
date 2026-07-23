@@ -1,6 +1,6 @@
 import { api } from '@/lib/api-client'
 import type { Page } from '@/types/common'
-import type { Vendor, VendorListQuery, VendorStatus } from '@/types/vendor'
+import type { Vendor, VendorDocuments, VendorListQuery, VendorStatus } from '@/types/vendor'
 
 export interface VendorCreateInput {
   npwp: string
@@ -34,4 +34,10 @@ export const vendorApi = {
   updateVerification: (id: string, input: VerificationInput) =>
     api.post<Vendor>(`/vendors/${id}/verification`, input),
   remove: (id: string) => api.delete(`/vendors/${id}`),
+
+  uploadDocument: (id: string, docKey: keyof VendorDocuments, file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.postForm<Vendor>(`/vendors/${id}/documents/${docKey}/upload`, formData)
+  },
 }

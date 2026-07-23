@@ -49,6 +49,14 @@ def _spk_payload(project_id: str, vendor_id: str) -> dict:
     }
 
 
+def _sppb_payload(project_id: str) -> dict:
+    return {
+        "project_id": project_id,
+        "issued_date": "2026-08-01",
+        "items": [{"description": "Kertas HVS", "unit": "Rim", "quantity_ordered": "10"}],
+    }
+
+
 async def test_project_starts_at_bidding_stage(client: AsyncClient) -> None:
     project = await _seed_project(client)
     assert project["stage"] == "Bidding"
@@ -71,7 +79,7 @@ async def test_full_timeline_happy_path(client: AsyncClient, vendor_payload: dic
     assert project["stage"] == "Surat Perintah Kerja (SPK)"
 
     # SPPB tanpa BG harus ditolak
-    resp = await client.post(f"/api/v1/projects/{pid}/sppb", json={"number": "SPPB-001", "date": "2026-08-01"})
+    resp = await client.post("/api/v1/sppb", json=_sppb_payload(pid))
     assert resp.status_code == 409
 
     # Lengkapi Bank Garansi
@@ -83,14 +91,26 @@ async def test_full_timeline_happy_path(client: AsyncClient, vendor_payload: dic
     assert resp.json()["bg_amount"] is not None
 
     # SPPB sekarang bisa diterbitkan
-    resp = await client.post(f"/api/v1/projects/{pid}/sppb", json={"number": "SPPB-001", "date": "2026-08-01"})
-    assert resp.status_code == 200
-    assert resp.json()["stage"] == "Surat Pesanan Pembelian Barang (SPPB)"
+    resp = await client.post("/api/v1/sppb", json=_sppb_payload(pid))
+    assert resp.status_code == 201
+    sppb = resp.json()
+    project = (await client.get(f"/api/v1/projects/{pid}")).json()
+    assert project["stage"] == "Surat Pesanan Pembelian Barang (SPPB)"
 
     # Vendor mulai pengerjaan
     resp = await client.post(f"/api/v1/projects/{pid}/work/start", headers=auth_header)
     assert resp.status_code == 200
     assert resp.json()["stage"] == "Pengerjaan Vendor"
+
+    # Vendor melapor progres pengiriman per baris barang
+    item_id = sppb["items"][0]["id"]
+    resp = await client.post(
+        f"/api/v1/sppb/{sppb['id']}/progress",
+        json={"items": [{"id": item_id, "quantity_delivered": "10"}]},
+        headers=auth_header,
+    )
+    assert resp.status_code == 200
+    assert resp.json()["items"][0]["quantity_delivered"] == "10.00"
 
     # RS coba konfirmasi sebelum vendor lapor -> ditolak
     resp = await client.post(f"/api/v1/projects/{pid}/work/confirm-complete")
@@ -127,6 +147,7 @@ async def test_full_timeline_happy_path(client: AsyncClient, vendor_payload: dic
         "Surat Pesanan Pembelian Barang (SPPB)",
         "Pengerjaan Vendor",
         "Pengerjaan Vendor",
+        "Pengerjaan Vendor",
         "Barang Lengkap",
         "Selesai",
     ]
@@ -146,7 +167,7 @@ async def test_other_vendor_cannot_report_work(client: AsyncClient, vendor_paylo
         f"/api/v1/projects/{pid}/bank-garansi",
         json={"amount": "5000000", "valid_until": "2027-01-01"},
     )
-    await client.post(f"/api/v1/projects/{pid}/sppb", json={"number": "SPPB-001", "date": "2026-08-01"})
+    await client.post("/api/v1/sppb", json=_sppb_payload(pid))
 
     resp = await client.post(
         f"/api/v1/projects/{pid}/work/start",

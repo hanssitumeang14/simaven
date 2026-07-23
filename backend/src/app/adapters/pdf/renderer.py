@@ -5,6 +5,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from weasyprint import HTML
 
 from app.adapters.db.models.spk import Spk
+from app.adapters.db.models.sppb import Sppb
 from app.config import settings
 
 TEMPLATE_DIR = Path(__file__).parent / "templates"
@@ -93,4 +94,21 @@ class PdfRenderer:
 
     def render_spk(self, spk: Spk) -> bytes:
         html = self.render_html(spk)
+        return HTML(string=html, base_url=str(TEMPLATE_DIR)).write_pdf()
+
+    def render_sppb_html(self, sppb: Sppb) -> str:
+        template = self.env.get_template("sppb.html")
+        return template.render(
+            sppb=sppb,
+            project=sppb.project,
+            vendor=sppb.vendor,
+            items=sppb.items,
+            org_name=settings.ORG_NAME,
+            org_address=settings.ORG_ADDRESS,
+            org_city=settings.ORG_CITY,
+            org_logo=settings.ORG_LOGO_PATH,
+        )
+
+    def render_sppb(self, sppb: Sppb) -> bytes:
+        html = self.render_sppb_html(sppb)
         return HTML(string=html, base_url=str(TEMPLATE_DIR)).write_pdf()

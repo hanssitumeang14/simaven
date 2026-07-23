@@ -34,8 +34,6 @@ export interface Project {
   bg_valid_until: string | null
   bg_submitted_at: string | null
   bg_document_path: string | null
-  sppb_number: string | null
-  sppb_date: string | null
   work_started_at: string | null
   goods_reported_at: string | null
   goods_confirmed_at: string | null

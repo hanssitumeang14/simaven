@@ -33,7 +33,6 @@ from app.service_layer.schemas.project import (
     ProjectParticipantUpdate,
     ProjectRead,
     ProjectUpdate,
-    SppbInput,
 )
 
 _LOGGER = get_logger(__name__)
@@ -360,23 +359,19 @@ class ProjectService:
         )
         return project
 
-    async def issue_sppb(self, project_id: uuid.UUID, payload: SppbInput) -> Project:
+    async def mark_sppb_issued(self, project_id: uuid.UUID, sppb_number: str) -> None:
+        """Dipanggil dari SppbService saat SPPB diterbitkan. Memajukan tahap ke SPPB."""
         project = await self.get(project_id)
-        if project.stage != ProjectStage.SPK:
-            raise ConflictError("SPPB hanya bisa diterbitkan pada tahap SPK")
-        if not project.bg_submitted_at:
-            raise ConflictError("Bank Garansi belum dilengkapi")
-
-        project = await self.repo.update(
-            project,
-            sppb_number=payload.number,
-            sppb_date=payload.date,
-            stage=ProjectStage.SPPB,
-        )
+        if project.stage == ProjectStage.SPK:
+            await self.repo.update(project, stage=ProjectStage.SPPB)
         await self._log_event(
-            project_id, ProjectStage.SPPB, UserRole.RS, f"SPPB {payload.number} diterbitkan"
+            project_id, ProjectStage.SPPB, UserRole.RS, f"SPPB {sppb_number} diterbitkan"
         )
-        return project
+
+    async def log_sppb_progress(self, project_id: uuid.UUID, note: str) -> None:
+        """Dipanggil dari SppbService saat vendor melapor progres pengiriman barang."""
+        project = await self.get(project_id)
+        await self._log_event(project_id, project.stage, UserRole.VENDOR, note)
 
     async def report_work_started(self, project_id: uuid.UUID, user: User) -> Project:
         project = await self._get_as_winning_vendor(project_id, user)
